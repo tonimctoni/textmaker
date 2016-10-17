@@ -1,4 +1,4 @@
-#include "momented_lstm_block_class.hpp"
+#include "rmsprop_lstm_block_class.hpp"
 #include <unordered_map>
 #include <ctime>
 #include <memory>
@@ -90,7 +90,7 @@ int main()
 
     static constexpr size_t allowed_char_amount=46;
     static constexpr size_t min_training_chars=40;
-    static constexpr size_t max_training_chars=1000;
+    static constexpr size_t max_training_chars=500;
     static constexpr time_t secons_between_saves=60*60;
 
     static constexpr unsigned long input_size=allowed_char_amount;
@@ -100,8 +100,8 @@ int main()
     static constexpr unsigned long third_mem_cell_size=100;
     static constexpr unsigned long output_mem_size=allowed_char_amount;
     double learning_rate=0.01;
-    double momentum=0.5;
-    static constexpr size_t batch_size=1;
+    static constexpr double decay=0.9;
+    static constexpr size_t batch_size=5;
 
     unique_ptr<TahnPerceptronBlock<input_size,reduced_input_size>> perceptronblock(new TahnPerceptronBlock<input_size,reduced_input_size>);
     unique_ptr<LSTMBlock<reduced_input_size, first_mem_cell_size>> lstmblock1(new LSTMBlock<reduced_input_size, first_mem_cell_size>());
@@ -156,9 +156,6 @@ int main()
         }
         else
         {
-            static constexpr double learning_rate=0.1;
-            static constexpr double momentum=0.9;
-            static constexpr size_t batch_size=1;
             print("First run... starting pre-training.");
             unique_ptr<SoftmaxBlock<reduced_input_size,input_size>> softmaxblock2(new SoftmaxBlock<reduced_input_size,input_size>);
             softmaxblock2->set_time_steps(1);
@@ -168,8 +165,6 @@ int main()
             double error=1.0;
             for(size_t iteration=0;error>0.00000001;iteration++)
             {
-                perceptronblock->apply_momentum(momentum);
-                softmaxblock2->apply_momentum(momentum);
                 for(size_t batch=0;batch<batch_size;batch++)
                 {
                     X.set(dst(gen));
@@ -183,8 +178,8 @@ int main()
                     perceptronblock->accumulate_gradients(X.get(),0);
                     softmaxblock2->accumulate_gradients(perceptronblock->get_output(0),0);
                 }
-                perceptronblock->update_weights_momentum(learning_rate);
-                softmaxblock2->update_weights_momentum(learning_rate);
+                perceptronblock->update_weights_ms(learning_rate, decay);
+                softmaxblock2->update_weights_ms(learning_rate, decay);
 
                 if(iteration%10000==0)
                 {
@@ -219,15 +214,7 @@ int main()
         if(iteration%1000==0)
         {
             learning_rate=0.01*pow(.955, (iteration/1000));// gets divided by 10 every 50k steps
-            if(iteration<=50000) momentum=0.5+0.008*(iteration/1000);
-            else if(iteration<=100000)momentum=0.9+0.0018*((iteration-50000)/1000);
-            else momentum=.99;
         }
-        perceptronblock->apply_momentum(momentum);
-        lstmblock1->apply_momentum(momentum);
-        lstmblock2->apply_momentum(momentum);
-        lstmblock3->apply_momentum(momentum);
-        softmaxblock->apply_momentum(momentum);
         for(size_t batch=0;batch<batch_size;batch++)
         {
             //Pick what characters to feed to the lsmts
@@ -279,11 +266,11 @@ int main()
                 softmaxblock->accumulate_gradients(lstmblock3->get_output(i), i);
             }
         }
-        perceptronblock->update_weights_momentum(learning_rate);
-        lstmblock1->update_weights_momentum(learning_rate);
-        lstmblock2->update_weights_momentum(learning_rate);
-        lstmblock3->update_weights_momentum(learning_rate);
-        softmaxblock->update_weights_momentum(learning_rate);
+        perceptronblock->update_weights_ms(learning_rate, decay);
+        lstmblock1->update_weights_ms(learning_rate, decay);
+        lstmblock2->update_weights_ms(learning_rate, decay);
+        lstmblock3->update_weights_ms(learning_rate, decay);
+        softmaxblock->update_weights_ms(learning_rate, decay);
 
 
         if(time(nullptr)-last_time>secons_between_saves)
@@ -310,10 +297,11 @@ int main()
                 assert(out.good());
                 out << "Current iteration: " << iteration << endl;
                 out << "Seconds elapsed since program started: " << time(nullptr)-first_time << endl;
+                out << "Optimizer: " << "rmsprop" << endl;
                 out << "Used memory cells: " << first_mem_cell_size << ", " << second_mem_cell_size << ", " << third_mem_cell_size << endl;
                 out << "Batch size: " << batch_size << endl;
                 out << "Learning rate: " << learning_rate << endl;
-                out << "Momentum: " << momentum << endl;
+                out << "Decay: " << decay << endl;
                 out << endl;
                 out << endl;
                 out << endl;
