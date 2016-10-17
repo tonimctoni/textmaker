@@ -785,7 +785,7 @@ public:
     {
         for(size_t i=0;i<M;i++)
             for(size_t j=0;j<N;j++)
-                (*this)[i][j]+=a[i][j]*(rate/sqrt(b[i][j]));
+                (*this)[i][j]+=a[i][j]*(rate/sqrt(b[i][j]+1e-8));
     }
 
     inline void add_factor_mul_a(const double factor, const Matrix& a) noexcept

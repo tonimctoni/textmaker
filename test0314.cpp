@@ -267,9 +267,8 @@ int main()
             {
                 softmaxblock->accumulate_gradients(inter_matrixes[i], i);
             }
-
-            softmaxblock->update_weights_momentum(learning_rate);
         }
+        softmaxblock->update_weights_momentum(learning_rate);
 
         if(time(nullptr)-last_time>secons_between_saves)
         {

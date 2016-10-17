@@ -283,11 +283,11 @@ int main()
                 perceptronblock2->accumulate_gradients(perceptronblock1->get_output(i), i);
                 softmaxblock->accumulate_gradients(perceptronblock2->get_output(i), i);
             }
-
-            perceptronblock1->update_weights_momentum(learning_rate);
-            perceptronblock2->update_weights_momentum(learning_rate);
-            softmaxblock->update_weights_momentum(learning_rate);
         }
+
+        perceptronblock1->update_weights_momentum(learning_rate);
+        perceptronblock2->update_weights_momentum(learning_rate);
+        softmaxblock->update_weights_momentum(learning_rate);
 
         if(time(nullptr)-last_time>secons_between_saves)
         {
