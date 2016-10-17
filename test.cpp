@@ -16,7 +16,7 @@ int main()
     Matrix<1,1> b2;
     syn0.randomize_for_nn();
     syn1.randomize_for_nn();
-    b1.randomize_for_nn(3);9.396
+    b1.randomize_for_nn(3);
     b2.randomize_for_nn(1);
     Matrix<1,3> l1;
     Matrix<1,1> l2;
