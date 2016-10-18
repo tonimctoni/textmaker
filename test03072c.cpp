@@ -123,7 +123,7 @@ int main()
     string asoiaf_content;
     read_file_to_string(asoiaf_filename, asoiaf_content);
 
-    // //This matrix will be used as input
+    //This matrix will be used as input
     OneHot<input_size> X;
     OneHot<output_mem_size> Y;
 

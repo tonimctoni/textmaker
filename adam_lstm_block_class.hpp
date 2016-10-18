@@ -49,6 +49,12 @@ public:
         mns_bias.from_file(in);
     }
 
+    inline void only_wb_to_bin_file(std::ofstream &out) const noexcept
+    {
+        weights.to_bin_file(out);
+        bias.to_bin_file(out);
+    }
+
     inline void to_bin_file(std::ofstream &out) const noexcept
     {
         weights.to_bin_file(out);
@@ -183,6 +189,12 @@ public:
         ms_bias.from_file(in);
         mns_weights.from_file(in);
         mns_bias.from_file(in);
+    }
+
+    inline void only_wb_to_bin_file(std::ofstream &out) const noexcept
+    {
+        weights.to_bin_file(out);
+        bias.to_bin_file(out);
     }
 
     inline void to_bin_file(std::ofstream &out) const noexcept
@@ -487,6 +499,22 @@ public:
         mns_bias_i.from_file(in);
         mns_bias_f.from_file(in);
         mns_bias_o.from_file(in);
+    }
+
+    inline void only_wb_to_bin_file(std::ofstream &out) noexcept
+    {
+        weights_xg.to_bin_file(out);
+        weights_xi.to_bin_file(out);
+        weights_xf.to_bin_file(out);
+        weights_xo.to_bin_file(out);
+        weights_hg.to_bin_file(out);
+        weights_hi.to_bin_file(out);
+        weights_hf.to_bin_file(out);
+        weights_ho.to_bin_file(out);
+        bias_g.to_bin_file(out);
+        bias_i.to_bin_file(out);
+        bias_f.to_bin_file(out);
+        bias_o.to_bin_file(out);
     }
 
     inline void to_bin_file(std::ofstream &out) noexcept
