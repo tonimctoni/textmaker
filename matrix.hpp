@@ -1,3 +1,5 @@
+#ifndef __MYMATRIX78256__IAMTONI__
+#define __MYMATRIX78256__IAMTONI__
 #include <array>
 #include <iostream>
 #include <cmath>
@@ -908,3 +910,5 @@ void test_matrix()
 
     //......
 }
+
+#endif

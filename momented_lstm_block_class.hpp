@@ -20,7 +20,6 @@ private:
     Matrix<input_size, output_size> weight_gradient_accumulator;
     Matrix<1, output_size> bias_gradient_accumulator;
 public:
-
     TahnPerceptronBlock(size_t time_steps=0) noexcept:layer_states(time_steps),moment_weights(0.0),moment_bias(0.0), weight_gradient_accumulator(0.0), bias_gradient_accumulator(0.0)
     {
         weights.randomize_for_nn(input_size+1);
