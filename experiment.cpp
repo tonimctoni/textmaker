@@ -327,8 +327,8 @@ int main()
 
 
 
-    // static constexpr size_t input_size=98;
-    // static constexpr size_t hidden_size=25;
+    // static constexpr size_t input_size=6;
+    // static constexpr size_t hidden_size=1;
 
     // unique_ptr<AdamTahnPerceptronBlock<input_size,hidden_size>> block1(new AdamTahnPerceptronBlock<input_size,hidden_size>(1));
     // unique_ptr<AdamSoftmaxBlock<hidden_size,input_size>> block2(new AdamSoftmaxBlock<hidden_size,input_size>(1));
@@ -340,7 +340,7 @@ int main()
     // std::uniform_int_distribution<size_t> dst(0,input_size-1);
 
     // // double last_average_error=0.0;
-    // for(size_t iteration=0;iteration<50000;iteration++)
+    // for(size_t iteration=0;iteration<5000000;iteration++)
     // {
     //     for(size_t batch=0;batch<1;batch++)
     //     {
@@ -360,7 +360,7 @@ int main()
     //     block1->update_weights_adam(.001, .999, .9);
     //     block2->update_weights_adam(.001, .999, .9);
 
-    //     if(iteration%1000==0)
+    //     if(iteration%100000==0)
     //     {
     //         double error=0.0;
     //         for(size_t new_input_index=0;new_input_index<input_size;new_input_index++)
@@ -382,6 +382,17 @@ int main()
     //         // error/=input_size;
     //         print(error);
     //     }
+    // }
+    // print("############");
+    // for(size_t i=0;i<input_size;i++)
+    // {
+    //     X[0][last_input_index]=0.0;
+    //     last_input_index=i;
+    //     X[0][last_input_index]=1.0;
+
+    //     block1->calc(X, 0);
+    //     // block2->calc(block1->get_output(0), 0);
+    //     print(block1->get_output(0));
     // }
 
 
