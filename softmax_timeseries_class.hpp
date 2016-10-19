@@ -12,7 +12,7 @@ struct LayerState
 #endif
 
 template<unsigned long input_size, unsigned long output_size>
-class BaseTahnPerceptronBlock
+class BaseSoftmaxBlock
 {
 protected:
     std::vector<LayerState<input_size, output_size>> layer_states;
@@ -21,7 +21,7 @@ protected:
     Matrix<input_size, output_size> weight_gradient_accumulator;
     Matrix<1, output_size> bias_gradient_accumulator;
 public:
-    BaseTahnPerceptronBlock(size_t time_steps=0) noexcept:layer_states(time_steps), weight_gradient_accumulator(0.0), bias_gradient_accumulator(0.0)
+    BaseSoftmaxBlock(size_t time_steps=0) noexcept:layer_states(time_steps), weight_gradient_accumulator(0.0), bias_gradient_accumulator(0.0)
     {
         weights.randomize_for_nn(input_size+1);
         bias.randomize_for_nn(input_size+1);
@@ -55,7 +55,15 @@ public:
 
         layer_states[time_step].output.equals_a_dot_b(X, weights);
         layer_states[time_step].output.add(bias);
-        layer_states[time_step].output.apply_tanh();
+        layer_states[time_step].output.apply_softmax();
+    }
+
+    inline void set_first_delta_and_propagate_with_cross_enthropy(const Matrix<1,output_size> &Y, Matrix<1,input_size> &X_delta, size_t time_step) noexcept
+    {
+        assert(time_step<layer_states.size());
+        //Get outputs delta
+        layer_states[time_step].delta_output.equals_a_sub_b(Y,layer_states[time_step].output);
+        X_delta.equals_a_dot_bt(layer_states[time_step].delta_output, weights);
     }
 
     inline void set_first_delta(const Matrix<1,output_size> &Y, size_t time_step) noexcept
@@ -69,7 +77,7 @@ public:
     {
         assert(time_step<layer_states.size());
         //Propagate delta
-        layer_states[time_step].delta_output.mult_after_func02(layer_states[time_step].output);
+        layer_states[time_step].delta_output.mult_after_func03(layer_states[time_step].output);
     }
 
     inline void propagate_delta(Matrix<1,input_size> &X_delta, size_t time_step) noexcept
@@ -97,19 +105,19 @@ public:
 };
 
 template<unsigned long input_size, unsigned long output_size>
-class NAGTahnPerceptronBlock : public BaseTahnPerceptronBlock<input_size, output_size>
+class NAGSoftmaxBlock : public BaseSoftmaxBlock<input_size, output_size>
 {
 private:
     Matrix<input_size, output_size> moment_weights;
     Matrix<1, output_size> moment_bias;
 public:
-    using BaseTahnPerceptronBlock<input_size, output_size>::layer_states;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weights;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weight_gradient_accumulator;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias_gradient_accumulator;
-    NAGTahnPerceptronBlock(size_t time_steps=0) noexcept
-    :BaseTahnPerceptronBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0)
+    using BaseSoftmaxBlock<input_size, output_size>::layer_states;
+    using BaseSoftmaxBlock<input_size, output_size>::weights;
+    using BaseSoftmaxBlock<input_size, output_size>::bias;
+    using BaseSoftmaxBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseSoftmaxBlock<input_size, output_size>::bias_gradient_accumulator;
+    NAGSoftmaxBlock(size_t time_steps=0) noexcept
+    :BaseSoftmaxBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0)
     {
     }
 
@@ -164,7 +172,7 @@ public:
 };
 
 template<unsigned long input_size, unsigned long output_size>
-class SpeedyTahnPerceptronBlock : public BaseTahnPerceptronBlock<input_size, output_size>
+class SpeedySoftmaxBlock : public BaseSoftmaxBlock<input_size, output_size>
 {
 private:
     Matrix<input_size, output_size> moment_weights;
@@ -172,12 +180,12 @@ private:
     Matrix<input_size, output_size> ms_weights;
     Matrix<1, output_size> ms_bias;
 public:
-    using BaseTahnPerceptronBlock<input_size, output_size>::layer_states;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weights;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weight_gradient_accumulator;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias_gradient_accumulator;
-    SpeedyTahnPerceptronBlock(size_t time_steps=0) noexcept:BaseTahnPerceptronBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0),ms_weights(1.0), ms_bias(1.0)
+    using BaseSoftmaxBlock<input_size, output_size>::layer_states;
+    using BaseSoftmaxBlock<input_size, output_size>::weights;
+    using BaseSoftmaxBlock<input_size, output_size>::bias;
+    using BaseSoftmaxBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseSoftmaxBlock<input_size, output_size>::bias_gradient_accumulator;
+    SpeedySoftmaxBlock(size_t time_steps=0) noexcept:BaseSoftmaxBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0),ms_weights(1.0), ms_bias(1.0)
     {
     }
 
@@ -244,18 +252,18 @@ public:
 };
 
 template<unsigned long input_size, unsigned long output_size>
-class RMSPropTahnPerceptronBlock : public BaseTahnPerceptronBlock<input_size, output_size>
+class RMSPropSoftmaxBlock : public BaseSoftmaxBlock<input_size, output_size>
 {
 private:
     Matrix<input_size, output_size> ms_weights;
     Matrix<1, output_size> ms_bias;
 public:
-    using BaseTahnPerceptronBlock<input_size, output_size>::layer_states;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weights;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weight_gradient_accumulator;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias_gradient_accumulator;
-    RMSPropTahnPerceptronBlock(size_t time_steps=0) noexcept:BaseTahnPerceptronBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0)
+    using BaseSoftmaxBlock<input_size, output_size>::layer_states;
+    using BaseSoftmaxBlock<input_size, output_size>::weights;
+    using BaseSoftmaxBlock<input_size, output_size>::bias;
+    using BaseSoftmaxBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseSoftmaxBlock<input_size, output_size>::bias_gradient_accumulator;
+    RMSPropSoftmaxBlock(size_t time_steps=0) noexcept:BaseSoftmaxBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0)
     {
         weights.randomize_for_nn(input_size+1);
         bias.randomize_for_nn(input_size+1);
@@ -308,7 +316,7 @@ public:
 };
 
 template<unsigned long input_size, unsigned long output_size>
-class AdamTahnPerceptronBlock : public BaseTahnPerceptronBlock<input_size, output_size>
+class AdamSoftmaxBlock : public BaseSoftmaxBlock<input_size, output_size>
 {
 private:
     Matrix<input_size, output_size> ms_weights;
@@ -316,12 +324,12 @@ private:
     Matrix<input_size, output_size> mns_weights;
     Matrix<1, output_size> mns_bias;
 public:
-    using BaseTahnPerceptronBlock<input_size, output_size>::layer_states;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weights;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weight_gradient_accumulator;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias_gradient_accumulator;
-    AdamTahnPerceptronBlock(size_t time_steps=0) noexcept:BaseTahnPerceptronBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0),mns_weights(1.0), mns_bias(1.0)
+    using BaseSoftmaxBlock<input_size, output_size>::layer_states;
+    using BaseSoftmaxBlock<input_size, output_size>::weights;
+    using BaseSoftmaxBlock<input_size, output_size>::bias;
+    using BaseSoftmaxBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseSoftmaxBlock<input_size, output_size>::bias_gradient_accumulator;
+    AdamSoftmaxBlock(size_t time_steps=0) noexcept:BaseSoftmaxBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0),mns_weights(1.0), mns_bias(1.0)
     {
     }
 

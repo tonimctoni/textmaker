@@ -1,4 +1,6 @@
 #include "perceptron_timeseries_class.hpp"
+#include "softmax_timeseries_class.hpp"
+#include "LSTM_class.hpp"
 #include <memory>
 // #include <fstream>
 using namespace std;
@@ -283,5 +285,107 @@ int main()
 
     //     print(block2->get_output(0));
     // }
+
+
+    // unique_ptr<NAGTahnPerceptronBlock<2,3>> block1(new NAGTahnPerceptronBlock<2,3>(1));
+    // unique_ptr<NAGTahnPerceptronBlock<3,1>> block2(new NAGTahnPerceptronBlock<3,1>(2));
+
+    // vector<Matrix<1,2>> X{{{0,0},},{{1,0},},{{0,1},},{{1,1},},};
+    // vector<Matrix<1,1>> Y{{{0, },},{{1, },},{{1, },},{{0, },},};
+    // print("################################");
+    // for(size_t i=0;i<10000000;i++)//10000000 -> 0m13.372s
+    // {
+    //     block1->apply_momentum(.9);
+    //     block2->apply_momentum(.9);
+    //     for(size_t j=0;j<4;j++)
+    //     {
+    //         block1->calc(X[j], 0);
+    //         block2->calc(block1->get_output(0), 0);
+
+    //         block2->set_first_delta(Y[j], 0);
+    //         block2->propagate_delta(block1->get_delta_output(0), 0);
+    //         block1->propagate_delta(0);
+
+    //         block1->accumulate_gradients(X[j],0);
+    //         block2->accumulate_gradients(block1->get_output(0),0);
+    //     }
+    //     block1->update_weights_momentum(.1);
+    //     block2->update_weights_momentum(.1);
+    // }
+
+    // for(size_t j=0;j<4;j++)
+    // {
+    //     block1->calc(X[j], 0);
+    //     block2->calc(block1->get_output(0), 0);
+
+    //     print(block2->get_output(0));
+    // }
+
+
+
+
+
+
+
+    // static constexpr size_t input_size=98;
+    // static constexpr size_t hidden_size=25;
+
+    // unique_ptr<AdamTahnPerceptronBlock<input_size,hidden_size>> block1(new AdamTahnPerceptronBlock<input_size,hidden_size>(1));
+    // unique_ptr<AdamSoftmaxBlock<hidden_size,input_size>> block2(new AdamSoftmaxBlock<hidden_size,input_size>(1));
+
+    // Matrix<1,input_size> X(0.0);
+    // size_t last_input_index=0;
+    // std::random_device rd;
+    // std::mt19937 gen(rd());
+    // std::uniform_int_distribution<size_t> dst(0,input_size-1);
+
+    // // double last_average_error=0.0;
+    // for(size_t iteration=0;iteration<50000;iteration++)
+    // {
+    //     for(size_t batch=0;batch<1;batch++)
+    //     {
+    //         X[0][last_input_index]=0.0;
+    //         last_input_index=dst(gen);
+    //         X[0][last_input_index]=1.0;
+
+    //         block1->calc(X, 0);
+    //         block2->calc(block1->get_output(0), 0);
+
+    //         block2->set_first_delta_and_propagate_with_cross_enthropy(X, block1->get_delta_output(0), 0);
+    //         block1->propagate_delta(0);
+
+    //         block1->accumulate_gradients(X,0);
+    //         block2->accumulate_gradients(block1->get_output(0),0);
+    //     }
+    //     block1->update_weights_adam(.001, .999, .9);
+    //     block2->update_weights_adam(.001, .999, .9);
+
+    //     if(iteration%1000==0)
+    //     {
+    //         double error=0.0;
+    //         for(size_t new_input_index=0;new_input_index<input_size;new_input_index++)
+    //         {
+    //             X[0][last_input_index]=0.0;
+    //             last_input_index=new_input_index;
+    //             X[0][last_input_index]=1.0;
+
+    //             block1->calc(X, 0);
+    //             block2->calc(block1->get_output(0), 0);
+
+    //             for(size_t i=0;i<input_size;i++)
+    //             {
+    //                 double aux=block2->get_output(0)[0][i]-X[0][i];
+    //                 aux*=aux;
+    //                 error+=aux;
+    //             }
+    //         }
+    //         // error/=input_size;
+    //         print(error);
+    //     }
+    // }
+
+
+
+
     return 0;
 }
