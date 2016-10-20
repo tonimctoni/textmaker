@@ -1,92 +1,23 @@
-#include "momented_lstm_block_class.hpp"
+#include "perceptron_timeseries_class.hpp"
+#include "LSTM_class.hpp"
+#include "softmax_timeseries_class.hpp"
 #include <unordered_map>
 #include <ctime>
 #include <memory>
 using namespace std;
 
-template<unsigned long N>
-inline size_t get_weighted_random_index(const std::array<double, N> &arr)
-{
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
 
-    double sum=0.0;
-    for(const auto e:arr)
-        sum+=e;
-    assert(sum<1.0625);
-    std::uniform_real_distribution<double> dst(0.0,sum);
 
-    sum=0.0;
-    double r=dst(gen);
-    for(size_t i=0;i<N;i++)
-    {
-        sum+=arr[i];
-        if(r<=sum) return i;
-    }
 
-    assert(0);
-}
-
-inline void read_file_to_string(const char *filename, string &out_str)
-{
-    std::ifstream in(filename, std::ios::in | std::ios::binary);
-    assert(in.good());
-    in.seekg(0, std::ios::end);
-    out_str.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&out_str[0], out_str.size());
-    in.close();
-}
-
-inline void read_file_to_string(const char *filename, string &out_str, size_t max_size)
-{
-    std::ifstream in(filename, std::ios::in | std::ios::binary);
-    assert(in.good());
-    in.seekg(0, std::ios::end);
-    out_str.resize(size_t(in.tellg())>max_size?max_size:size_t(in.tellg()));
-    in.seekg(0, std::ios::beg);
-    in.read(&out_str[0], size_t(in.tellg())>max_size?max_size:size_t(in.tellg()));
-    in.close();
-}
-
-template<unsigned long mat_size>
-class OneHot
-{
-private:
-    size_t hot_index;
-    Matrix<1, mat_size> X;
-public:
-    OneHot()noexcept:hot_index(0), X(0.0)
-    {
-    }
-
-    inline void set(size_t index) noexcept
-    {
-        assert(index<mat_size);
-        X[0][hot_index]=0.0;
-        hot_index=index;
-        X[0][hot_index]=1.0;
-    }
-
-    inline void reset() noexcept
-    {
-        X[0][hot_index]=0.0;
-    }
-
-    inline const Matrix<1, mat_size>& get() const noexcept
-    {
-        return X;
-    }
-};
-
-//remove asserts
 int main()
 {
     const char *savecounter_filename="data/savecounter.svc";
     const char *savestate_filename="data/savestate%08lu.sst";
-    const char *output_filename="data/output%08lu.sst";
+    const char *wb_filename="data/wb.wab";
+    const char *output_filename="data/output%08lu.txt";
     const char *asoiaf_filename="../asoiaf/asoiaf.txt";
     static constexpr size_t output_length=2000;
+    static constexpr size_t output_quantity=10;
 
     static constexpr size_t allowed_char_amount=46;
     static constexpr size_t min_training_chars=40;
@@ -100,19 +31,28 @@ int main()
     static constexpr unsigned long third_mem_cell_size=100;
     static constexpr unsigned long output_mem_size=allowed_char_amount;
     double learning_rate=0.01;
-    double momentum=0.5;
+    static constexpr double decay=0.9;
     static constexpr size_t batch_size=5;
 
-    unique_ptr<TahnPerceptronBlock<input_size,reduced_input_size>> perceptronblock(new TahnPerceptronBlock<input_size,reduced_input_size>);
-    unique_ptr<LSTMBlock<reduced_input_size, first_mem_cell_size>> lstmblock1(new LSTMBlock<reduced_input_size, first_mem_cell_size>());
-    unique_ptr<LSTMBlock<first_mem_cell_size, second_mem_cell_size>> lstmblock2(new LSTMBlock<first_mem_cell_size, second_mem_cell_size>());
-    unique_ptr<LSTMBlock<second_mem_cell_size, third_mem_cell_size>> lstmblock3(new LSTMBlock<second_mem_cell_size, third_mem_cell_size>());
-    unique_ptr<SoftmaxBlock<third_mem_cell_size,output_mem_size>> softmaxblock(new SoftmaxBlock<third_mem_cell_size,output_mem_size>);
+
+    using Block01=RMSPropTahnPerceptronBlock<input_size,reduced_input_size>;
+    using Block02=RMSPropLSTMBlock<reduced_input_size, first_mem_cell_size>;
+    using Block03=RMSPropLSTMBlock<first_mem_cell_size, second_mem_cell_size>;
+    using Block04=RMSPropLSTMBlock<second_mem_cell_size, third_mem_cell_size>;
+    using Block05=RMSPropSoftmaxBlock<third_mem_cell_size, output_mem_size>;
+
+    unique_ptr<Block01> perceptronblock(new Block01);
+    unique_ptr<Block02> lstmblock1(new Block02);
+    unique_ptr<Block03> lstmblock2(new Block03);
+    unique_ptr<Block04> lstmblock3(new Block04);
+    unique_ptr<Block05> softmaxblock(new Block05);
+
     perceptronblock->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock1->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock2->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock3->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     softmaxblock->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
+
 
     //Setup the char_to_index and index_to_char mappings
     const string index_to_char="! ')(-,.103254769;:?acbedgfihkjmlonqpsrutwvyxz";
@@ -141,7 +81,7 @@ int main()
         if(in.good())
         {
             in >> save_counter >> iteration;
-            if(save_counter!=0)
+            assert(save_counter!=0);
             {
                 char cbuffer[256];
                 sprintf(cbuffer, savestate_filename, save_counter);
@@ -156,11 +96,9 @@ int main()
         }
         else
         {
-            static constexpr double learning_rate=0.1;
-            static constexpr double momentum=0.9;
-            static constexpr size_t batch_size=1;
             print("First run... starting pre-training.");
-            unique_ptr<SoftmaxBlock<reduced_input_size,input_size>> softmaxblock2(new SoftmaxBlock<reduced_input_size,input_size>);
+            using BlockPre=RMSPropSoftmaxBlock<reduced_input_size,input_size>;
+            unique_ptr<BlockPre> softmaxblock2(new BlockPre);
             softmaxblock2->set_time_steps(1);
             perceptronblock->set_time_steps(1);
             std::uniform_int_distribution<size_t> dst(0,input_size-1);
@@ -168,8 +106,6 @@ int main()
             double error=1.0;
             for(size_t iteration=0;error>0.00000001;iteration++)
             {
-                perceptronblock->apply_momentum(momentum);
-                softmaxblock2->apply_momentum(momentum);
                 for(size_t batch=0;batch<batch_size;batch++)
                 {
                     X.set(dst(gen));
@@ -183,8 +119,8 @@ int main()
                     perceptronblock->accumulate_gradients(X.get(),0);
                     softmaxblock2->accumulate_gradients(perceptronblock->get_output(0),0);
                 }
-                perceptronblock->update_weights_momentum(learning_rate);
-                softmaxblock2->update_weights_momentum(learning_rate);
+                perceptronblock->update_weights_ms(learning_rate, decay);
+                softmaxblock2->update_weights_ms(learning_rate, decay);
 
                 if(iteration%10000==0)
                 {
@@ -210,7 +146,6 @@ int main()
         }
     }
 
-
     time_t last_time=time(nullptr);
     time_t first_time=last_time;
     //All of the training happens within this loop
@@ -218,16 +153,8 @@ int main()
     {
         if(iteration%1000==0)
         {
-            learning_rate=0.01*pow(.955, (iteration/1000));// gets divided by 10 every 50k steps
-            if(iteration<=50000) momentum=0.5+0.008*(iteration/1000);
-            else if(iteration<=100000)momentum=0.9+0.0018*((iteration-50000)/1000);
-            else momentum=.99;
+            learning_rate=0.01*pow(0.954992586021436, (iteration/1000));// gets divided by 10 every 50k steps
         }
-        perceptronblock->apply_momentum(momentum);
-        lstmblock1->apply_momentum(momentum);
-        lstmblock2->apply_momentum(momentum);
-        lstmblock3->apply_momentum(momentum);
-        softmaxblock->apply_momentum(momentum);
         for(size_t batch=0;batch<batch_size;batch++)
         {
             //Pick what characters to feed to the lsmts
@@ -279,11 +206,11 @@ int main()
                 softmaxblock->accumulate_gradients(lstmblock3->get_output(i), i);
             }
         }
-        perceptronblock->update_weights_momentum(learning_rate);
-        lstmblock1->update_weights_momentum(learning_rate);
-        lstmblock2->update_weights_momentum(learning_rate);
-        lstmblock3->update_weights_momentum(learning_rate);
-        softmaxblock->update_weights_momentum(learning_rate);
+        perceptronblock->update_weights_ms(learning_rate, decay);
+        lstmblock1->update_weights_ms(learning_rate, decay);
+        lstmblock2->update_weights_ms(learning_rate, decay);
+        lstmblock3->update_weights_ms(learning_rate, decay);
+        softmaxblock->update_weights_ms(learning_rate, decay);
 
 
         if(time(nullptr)-last_time>secons_between_saves)
@@ -300,8 +227,17 @@ int main()
                 perceptronblock->to_bin_file(out);
                 lstmblock1->to_bin_file(out);
                 lstmblock2->to_bin_file(out);
-                // lstmblock3->to_bin_file(out);
+                lstmblock3->to_bin_file(out);
                 softmaxblock->to_bin_file(out);
+            }
+            {
+                ofstream out(wb_filename,std::ios_base::trunc|std::ios::binary);
+                assert(out.good());
+                perceptronblock->only_wb_to_bin_file(out);
+                lstmblock1->only_wb_to_bin_file(out);
+                lstmblock2->only_wb_to_bin_file(out);
+                lstmblock3->only_wb_to_bin_file(out);
+                softmaxblock->only_wb_to_bin_file(out);
             }
             //Save some data and some output examples to file
             sprintf(cbuffer, output_filename, save_counter);
@@ -310,16 +246,16 @@ int main()
                 assert(out.good());
                 out << "Current iteration: " << iteration << endl;
                 out << "Seconds elapsed since program started: " << time(nullptr)-first_time << endl;
-                out << "Optimizer: " << "nesterov momentum" << endl;
+                out << "Optimizer: " << "rmsprop" << endl;
                 out << "Used memory cells: " << first_mem_cell_size << ", " << second_mem_cell_size << ", " << third_mem_cell_size << endl;
                 out << "Batch size: " << batch_size << endl;
                 out << "Learning rate: " << learning_rate << endl;
-                out << "Momentum: " << momentum << endl;
+                out << "Decay: " << decay << endl;
                 out << endl;
                 out << endl;
                 out << endl;
                 out << endl;
-                for(size_t ex=0;ex<10;ex++)
+                for(size_t ex=0;ex<output_quantity;ex++)
                 {
                     out << "################################ EXAMPLE " << ex+1 << " ################################" << endl;
                     size_t next_input_index=dst_rdchar(gen);

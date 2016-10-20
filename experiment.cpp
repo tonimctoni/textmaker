@@ -5,7 +5,8 @@
 // #include <fstream>
 using namespace std;
 
-
+// 0.954992586021436 --> *.1 every 50
+// 0.9772372209558107 --> *.1 every 100
 int main()
 {
     // std::ifstream in(filename, std::ios::in);

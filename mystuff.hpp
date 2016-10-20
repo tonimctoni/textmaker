@@ -97,5 +97,48 @@ inline void print(T v, Args... args)
     print(args...);
 }
 
+template<unsigned long N>
+inline size_t get_weighted_random_index(const std::array<double, N> &arr)
+{
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
 
+    double sum=0.0;
+    for(const auto e:arr)
+        sum+=e;
+    assert(sum<1.0625);
+    std::uniform_real_distribution<double> dst(0.0,sum);
+
+    sum=0.0;
+    double r=dst(gen);
+    for(size_t i=0;i<N;i++)
+    {
+        sum+=arr[i];
+        if(r<=sum) return i;
+    }
+
+    assert(0);
+}
+
+inline void read_file_to_string(const char *filename, std::string &out_str)
+{
+    std::ifstream in(filename, std::ios::in | std::ios::binary);
+    assert(in.good());
+    in.seekg(0, std::ios::end);
+    out_str.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&out_str[0], out_str.size());
+    in.close();
+}
+
+inline void read_file_to_string(const char *filename, std::string &out_str, size_t max_size)
+{
+    std::ifstream in(filename, std::ios::in | std::ios::binary);
+    assert(in.good());
+    in.seekg(0, std::ios::end);
+    out_str.resize(size_t(in.tellg())>max_size?max_size:size_t(in.tellg()));
+    in.seekg(0, std::ios::beg);
+    in.read(&out_str[0], size_t(in.tellg())>max_size?max_size:size_t(in.tellg()));
+    in.close();
+}
 #endif

@@ -911,4 +911,34 @@ void test_matrix()
     //......
 }
 
+template<unsigned long mat_size>
+class OneHot
+{
+private:
+    size_t hot_index;
+    Matrix<1, mat_size> X;
+public:
+    OneHot()noexcept:hot_index(0), X(0.0)
+    {
+    }
+
+    inline void set(size_t index) noexcept
+    {
+        assert(index<mat_size);
+        X[0][hot_index]=0.0;
+        hot_index=index;
+        X[0][hot_index]=1.0;
+    }
+
+    inline void reset() noexcept
+    {
+        X[0][hot_index]=0.0;
+    }
+
+    inline const Matrix<1, mat_size>& get() const noexcept
+    {
+        return X;
+    }
+};
+
 #endif
