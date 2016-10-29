@@ -17,7 +17,7 @@ int main()
     const char *output_filename="data/output%08lu.txt";
     const char *asoiaf_filename="../asoiaf/asoiaf.txt";
     static constexpr size_t output_length=2000;
-    static constexpr size_t output_quantity=5;
+    static constexpr size_t output_quantity=10;
 
     static constexpr size_t allowed_char_amount=46;
     static constexpr size_t min_training_chars=40;
@@ -26,36 +26,38 @@ int main()
 
     static constexpr unsigned long input_size=allowed_char_amount;
     static constexpr unsigned long reduced_input_size=allowed_char_amount/4;
-    static constexpr unsigned long all_mem_cell_size=100;
+    static constexpr unsigned long first_mem_cell_size=512;
+    static constexpr unsigned long second_mem_cell_size=512;
+    static constexpr unsigned long third_mem_cell_size=512;
     static constexpr unsigned long output_mem_size=allowed_char_amount;
     double learning_rate=0.01;
-    static constexpr double decay=0.9;
-    static constexpr size_t batch_size=5;
+    double momentum=0.5;
+    static constexpr size_t batch_size=1;
 
 
-    using Block01=RMSPropTahnPerceptronBlock<input_size,reduced_input_size>;
-    using Block02=RMSPropLSTMBlock<reduced_input_size, all_mem_cell_size>;
-    using Block03=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block04=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block05=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block06=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block07=RMSPropSoftmaxBlock<all_mem_cell_size, output_mem_size>;
+    using Block01=NAGTahnPerceptronBlock<input_size,reduced_input_size>;
+    using Block02=NAGLSTMBlock<reduced_input_size, first_mem_cell_size>;
+    using Block03=NAGLSTMBlock<100, second_mem_cell_size>;
+    using Block04=NAGLSTMBlock<100, third_mem_cell_size>;
+    using Block05=NAGSoftmaxBlock<third_mem_cell_size, output_mem_size>;
+
+    using BeeBlock=NAGTahnPerceptronBlock<512, 100>;
 
     unique_ptr<Block01> perceptronblock(new Block01);
     unique_ptr<Block02> lstmblock1(new Block02);
+    unique_ptr<BeeBlock> beeblock1(new BeeBlock);
     unique_ptr<Block03> lstmblock2(new Block03);
+    unique_ptr<BeeBlock> beeblock2(new BeeBlock);
     unique_ptr<Block04> lstmblock3(new Block04);
-    unique_ptr<Block05> lstmblock4(new Block05);
-    unique_ptr<Block06> lstmblock5(new Block06);
-    unique_ptr<Block07> softmaxblock(new Block07);
+    unique_ptr<Block05> softmaxblock(new Block05);
 
     perceptronblock->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock1->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock2->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock3->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
-    lstmblock4->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
-    lstmblock5->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     softmaxblock->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
+    beeblock1->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
+    beeblock2->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
 
 
     //Setup the char_to_index and index_to_char mappings
@@ -93,17 +95,20 @@ int main()
                 assert(in.good());
                 perceptronblock->from_bin_file(in);
                 lstmblock1->from_bin_file(in);
+                beeblock1->from_bin_file(in);
                 lstmblock2->from_bin_file(in);
+                beeblock2->from_bin_file(in);
                 lstmblock3->from_bin_file(in);
-                lstmblock4->from_bin_file(in);
-                lstmblock5->from_bin_file(in);
                 softmaxblock->from_bin_file(in);
             }
         }
         else
         {
+            static constexpr double learning_rate=0.1;
+            static constexpr double momentum=0.9;
+            static constexpr size_t batch_size=1;
             print("First run... starting pre-training.");
-            using BlockPre=RMSPropSoftmaxBlock<reduced_input_size,input_size>;
+            using BlockPre=NAGSoftmaxBlock<reduced_input_size,input_size>;
             unique_ptr<BlockPre> softmaxblock2(new BlockPre);
             softmaxblock2->set_time_steps(1);
             perceptronblock->set_time_steps(1);
@@ -112,6 +117,8 @@ int main()
             double error=1.0;
             for(size_t iteration=0;error>0.00000001;iteration++)
             {
+                perceptronblock->apply_momentum(momentum);
+                softmaxblock2->apply_momentum(momentum);
                 for(size_t batch=0;batch<batch_size;batch++)
                 {
                     X.set(dst(gen));
@@ -125,8 +132,8 @@ int main()
                     perceptronblock->accumulate_gradients(X.get(),0);
                     softmaxblock2->accumulate_gradients(perceptronblock->get_output(0),0);
                 }
-                perceptronblock->update_weights_ms(learning_rate, decay);
-                softmaxblock2->update_weights_ms(learning_rate, decay);
+                perceptronblock->update_weights_momentum(learning_rate);
+                softmaxblock2->update_weights_momentum(learning_rate);
 
                 if(iteration%10000==0)
                 {
@@ -159,8 +166,20 @@ int main()
     {
         if(iteration%1000==0)
         {
-            learning_rate=0.01*pow(0.954992586021436, (iteration/1000));// gets divided by 10 every 50k steps
+            learning_rate=0.01*pow(0.9772372209558107, (iteration/1000));// gets divided by 10 every 100k steps
+            if(iteration<=50000) momentum=0.5+0.008*(iteration/1000);
+            else if(iteration<=100000)momentum=0.9+0.0018*((iteration-50000)/1000);
+            else if(iteration<=150000)momentum=0.99+0.00018*((iteration-100000)/1000);
+            else if(iteration<=200000)momentum=0.999+0.000018*((iteration-150000)/1000);
+            else momentum=.9999;
         }
+        perceptronblock->apply_momentum(momentum);
+        lstmblock1->apply_momentum(momentum);
+        beeblock1->apply_momentum(momentum);
+        lstmblock2->apply_momentum(momentum);
+        beeblock2->apply_momentum(momentum);
+        lstmblock3->apply_momentum(momentum);
+        softmaxblock->apply_momentum(momentum);
         for(size_t batch=0;batch<batch_size;batch++)
         {
             //Pick what characters to feed to the lsmts
@@ -168,10 +187,10 @@ int main()
             size_t asoiaf_length=dst_lengt(gen);
             perceptronblock->set_time_steps(asoiaf_length);
             lstmblock1->set_time_steps(asoiaf_length);
+            beeblock1->set_time_steps(asoiaf_length);
             lstmblock2->set_time_steps(asoiaf_length);
+            beeblock2->set_time_steps(asoiaf_length);
             lstmblock3->set_time_steps(asoiaf_length);
-            lstmblock4->set_time_steps(asoiaf_length);
-            lstmblock5->set_time_steps(asoiaf_length);
             softmaxblock->set_time_steps(asoiaf_length);
 
             //Let the network calculate an output given the input
@@ -182,11 +201,11 @@ int main()
 
                 perceptronblock->calc(X.get(), i);
                 lstmblock1->calc(perceptronblock->get_output(i), i);
-                lstmblock2->calc(lstmblock1->get_output(i), i);
-                lstmblock3->calc(lstmblock2->get_output(i), i);
-                lstmblock4->calc(lstmblock3->get_output(i), i);
-                lstmblock5->calc(lstmblock4->get_output(i), i);
-                softmaxblock->calc(lstmblock5->get_output(i), i);
+                beeblock1->calc(lstmblock1->get_output(i), i);
+                lstmblock2->calc(beeblock1->get_output(i), i);
+                beeblock2->calc(lstmblock2->get_output(i), i);
+                lstmblock3->calc(beeblock2->get_output(i), i);
+                softmaxblock->calc(lstmblock3->get_output(i), i);
             }
 
             //Calculate deltas
@@ -195,11 +214,11 @@ int main()
                 //Set up output
                 Y.set(char_to_index[asoiaf_content[asoiaf_start+i]]);
 
-                softmaxblock->set_first_delta_and_propagate_with_cross_enthropy(Y.get(), lstmblock5->get_delta_output(i), i);
-                lstmblock5->propagate_delta(lstmblock4->get_delta_output(i), i, asoiaf_length);
-                lstmblock4->propagate_delta(lstmblock3->get_delta_output(i), i, asoiaf_length);
-                lstmblock3->propagate_delta(lstmblock2->get_delta_output(i), i, asoiaf_length);
-                lstmblock2->propagate_delta(lstmblock1->get_delta_output(i), i, asoiaf_length);
+                softmaxblock->set_first_delta_and_propagate_with_cross_enthropy(Y.get(), lstmblock3->get_delta_output(i), i);
+                lstmblock3->propagate_delta(beeblock2->get_delta_output(i), i, asoiaf_length);
+                beeblock2->propagate_delta(lstmblock2->get_delta_output(i), i);
+                lstmblock2->propagate_delta(beeblock1->get_delta_output(i), i, asoiaf_length);
+                beeblock1->propagate_delta(lstmblock1->get_delta_output(i), i);
                 lstmblock1->propagate_delta(perceptronblock->get_delta_output(i), i, asoiaf_length);
                 perceptronblock->propagate_delta(i);
                 if(i--==0)break;
@@ -213,20 +232,20 @@ int main()
 
                 perceptronblock->accumulate_gradients(X.get(), i);
                 lstmblock1->accumulate_gradients(perceptronblock->get_output(i), i);
-                lstmblock2->accumulate_gradients(lstmblock1->get_output(i), i);
-                lstmblock3->accumulate_gradients(lstmblock2->get_output(i), i);
-                lstmblock4->accumulate_gradients(lstmblock3->get_output(i), i);
-                lstmblock5->accumulate_gradients(lstmblock4->get_output(i), i);
-                softmaxblock->accumulate_gradients(lstmblock5->get_output(i), i);
+                beeblock1->accumulate_gradients(lstmblock1->get_output(i), i);
+                lstmblock2->accumulate_gradients(beeblock1->get_output(i), i);
+                beeblock2->accumulate_gradients(lstmblock2->get_output(i), i);
+                lstmblock3->accumulate_gradients(beeblock2->get_output(i), i);
+                softmaxblock->accumulate_gradients(lstmblock3->get_output(i), i);
             }
         }
-        perceptronblock->update_weights_ms(learning_rate, decay);
-        lstmblock1->update_weights_ms(learning_rate, decay);
-        lstmblock2->update_weights_ms(learning_rate, decay);
-        lstmblock3->update_weights_ms(learning_rate, decay);
-        lstmblock4->update_weights_ms(learning_rate, decay);
-        lstmblock5->update_weights_ms(learning_rate, decay);
-        softmaxblock->update_weights_ms(learning_rate, decay);
+        perceptronblock->update_weights_momentum(learning_rate);
+        lstmblock1->update_weights_momentum(learning_rate);
+        beeblock1->update_weights_momentum(learning_rate);
+        lstmblock2->update_weights_momentum(learning_rate);
+        beeblock2->update_weights_momentum(learning_rate);
+        lstmblock3->update_weights_momentum(learning_rate);
+        softmaxblock->update_weights_momentum(learning_rate);
 
 
         if(time(nullptr)-last_time>secons_between_saves)
@@ -242,21 +261,26 @@ int main()
                 assert(out.good());
                 perceptronblock->to_bin_file(out);
                 lstmblock1->to_bin_file(out);
+                beeblock1->to_bin_file(out);
                 lstmblock2->to_bin_file(out);
+                beeblock2->to_bin_file(out);
                 lstmblock3->to_bin_file(out);
-                lstmblock4->to_bin_file(out);
-                lstmblock5->to_bin_file(out);
                 softmaxblock->to_bin_file(out);
+            }
+            if(save_counter>1)
+            {
+                sprintf(cbuffer, savestate_filename, save_counter-1);
+                assert(remove(cbuffer)==0);
             }
             {
                 ofstream out(wb_filename,std::ios_base::trunc|std::ios::binary);
                 assert(out.good());
                 perceptronblock->only_wb_to_bin_file(out);
                 lstmblock1->only_wb_to_bin_file(out);
+                beeblock1->only_wb_to_bin_file(out);
                 lstmblock2->only_wb_to_bin_file(out);
+                beeblock2->only_wb_to_bin_file(out);
                 lstmblock3->only_wb_to_bin_file(out);
-                lstmblock4->only_wb_to_bin_file(out);
-                lstmblock5->only_wb_to_bin_file(out);
                 softmaxblock->only_wb_to_bin_file(out);
             }
             //Save some data and some output examples to file
@@ -266,11 +290,11 @@ int main()
                 assert(out.good());
                 out << "Current iteration: " << iteration << endl;
                 out << "Seconds elapsed since program started: " << time(nullptr)-first_time << endl;
-                out << "Optimizer: " << "rmsprop" << endl;
-                out << "Used memory cells: " << all_mem_cell_size << "x5" << endl;
+                out << "Optimizer: " << "nag" << endl;
+                out << "Used memory cells: " << first_mem_cell_size << ", " << second_mem_cell_size << ", " << third_mem_cell_size << endl;
                 out << "Batch size: " << batch_size << endl;
                 out << "Learning rate: " << learning_rate << endl;
-                out << "Decay: " << decay << endl;
+                out << "Momentum: " << momentum << endl;
                 out << endl;
                 out << endl;
                 out << endl;
@@ -281,10 +305,10 @@ int main()
                     size_t next_input_index=dst_rdchar(gen);
                     perceptronblock->set_time_steps(output_length);
                     lstmblock1->set_time_steps(output_length);
+                    beeblock1->set_time_steps(output_length);
                     lstmblock2->set_time_steps(output_length);
+                    beeblock2->set_time_steps(output_length);
                     lstmblock3->set_time_steps(output_length);
-                    lstmblock4->set_time_steps(output_length);
-                    lstmblock5->set_time_steps(output_length);
                     softmaxblock->set_time_steps(output_length);
                     for(size_t i=0;i<output_length;i++)
                     {
@@ -292,11 +316,11 @@ int main()
 
                         perceptronblock->calc(X.get(), i);
                         lstmblock1->calc(perceptronblock->get_output(i), i);
-                        lstmblock2->calc(lstmblock1->get_output(i), i);
-                        lstmblock3->calc(lstmblock2->get_output(i), i);
-                        lstmblock4->calc(lstmblock3->get_output(i), i);
-                        lstmblock5->calc(lstmblock4->get_output(i), i);
-                        softmaxblock->calc(lstmblock5->get_output(i), i);
+                        beeblock1->calc(lstmblock1->get_output(i), i);
+                        lstmblock2->calc(beeblock1->get_output(i), i);
+                        beeblock2->calc(lstmblock2->get_output(i), i);
+                        lstmblock3->calc(beeblock2->get_output(i), i);
+                        softmaxblock->calc(lstmblock3->get_output(i), i);
                         next_input_index=get_weighted_random_index(softmaxblock->get_output(i)[0]);
                         out << index_to_char[next_input_index];
                     }

@@ -3,6 +3,8 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include <random>
+#include <fstream>
 
 //Exception to be thrown on assertion fails.
 class AssertionException : public std::exception

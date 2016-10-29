@@ -5,7 +5,10 @@
 // #include <fstream>
 using namespace std;
 
-// 0.954992586021436 --> *.1 every 50
+// 0.7943282347242815 --> *.1 every 10
+// 0.8912509381337456 --> *.1 every 20
+// 0.9120108393559098 --> *.1 every 25
+// 0.9549925860214360 --> *.1 every 50
 // 0.9772372209558107 --> *.1 every 100
 int main()
 {
@@ -397,6 +400,26 @@ int main()
     // }
 
 
+    string asoiaf_content;
+    read_file_to_string("../asoiaf/asoiaf.txt", asoiaf_content);
+    vector<size_t> sentence_starts;
+    sentence_starts.reserve(150000);
+    sentence_starts.push_back(0);
+    for(size_t i=0;i<asoiaf_content.size()-1;i++)
+        if(asoiaf_content[i]=='.' and asoiaf_content[i+1]!='.' and asoiaf_content[i-1]!='.')
+            sentence_starts.push_back(i+1);
+    sentence_starts.push_back(asoiaf_content.size());
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<size_t> dst_start(0,sentence_starts.size()-2);
+
+    size_t start=dst_start(gen);
+    for(size_t i=sentence_starts[start];i<sentence_starts[start+1];i++)
+        cout << asoiaf_content[i];
+    cout << endl;
+    print(asoiaf_content.size());
+    print(sentence_starts.size());
 
 
     return 0;

@@ -29,17 +29,17 @@ int main()
     static constexpr unsigned long all_mem_cell_size=100;
     static constexpr unsigned long output_mem_size=allowed_char_amount;
     double learning_rate=0.01;
-    static constexpr double decay=0.9;
-    static constexpr size_t batch_size=5;
+    double momentum=0.5;
+    static constexpr size_t batch_size=1;
 
 
-    using Block01=RMSPropTahnPerceptronBlock<input_size,reduced_input_size>;
-    using Block02=RMSPropLSTMBlock<reduced_input_size, all_mem_cell_size>;
-    using Block03=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block04=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block05=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block06=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block07=RMSPropSoftmaxBlock<all_mem_cell_size, output_mem_size>;
+    using Block01=NAGTahnPerceptronBlock<input_size,reduced_input_size>;
+    using Block02=NAGLSTMBlock<reduced_input_size, all_mem_cell_size>;
+    using Block03=NAGLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
+    using Block04=NAGLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
+    using Block05=NAGLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
+    using Block06=NAGLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
+    using Block07=NAGSoftmaxBlock<all_mem_cell_size, output_mem_size>;
 
     unique_ptr<Block01> perceptronblock(new Block01);
     unique_ptr<Block02> lstmblock1(new Block02);
@@ -102,8 +102,11 @@ int main()
         }
         else
         {
+            static constexpr double learning_rate=0.1;
+            static constexpr double momentum=0.9;
+            static constexpr size_t batch_size=1;
             print("First run... starting pre-training.");
-            using BlockPre=RMSPropSoftmaxBlock<reduced_input_size,input_size>;
+            using BlockPre=NAGSoftmaxBlock<reduced_input_size,input_size>;
             unique_ptr<BlockPre> softmaxblock2(new BlockPre);
             softmaxblock2->set_time_steps(1);
             perceptronblock->set_time_steps(1);
@@ -112,6 +115,8 @@ int main()
             double error=1.0;
             for(size_t iteration=0;error>0.00000001;iteration++)
             {
+                perceptronblock->apply_momentum(momentum);
+                softmaxblock2->apply_momentum(momentum);
                 for(size_t batch=0;batch<batch_size;batch++)
                 {
                     X.set(dst(gen));
@@ -125,8 +130,8 @@ int main()
                     perceptronblock->accumulate_gradients(X.get(),0);
                     softmaxblock2->accumulate_gradients(perceptronblock->get_output(0),0);
                 }
-                perceptronblock->update_weights_ms(learning_rate, decay);
-                softmaxblock2->update_weights_ms(learning_rate, decay);
+                perceptronblock->update_weights_momentum(learning_rate);
+                softmaxblock2->update_weights_momentum(learning_rate);
 
                 if(iteration%10000==0)
                 {
@@ -154,13 +159,25 @@ int main()
 
     time_t last_time=time(nullptr);
     time_t first_time=last_time;
+    double error=0;
     //All of the training happens within this loop
     for(;;iteration++)
     {
         if(iteration%1000==0)
         {
-            learning_rate=0.01*pow(0.954992586021436, (iteration/1000));// gets divided by 10 every 50k steps
+            learning_rate=0.01*pow(0.954992586021436, (iteration/1000));// gets divided by 10 every 100k steps
+            if(iteration<=50000) momentum=0.5+0.008*(iteration/1000);
+            else if(iteration<=100000)momentum=0.9+0.0018*((iteration-50000)/1000);
+            else if(iteration<=150000)momentum=0.99+0.00018*((iteration-100000)/1000);
+            else momentum=.999;
         }
+        perceptronblock->apply_momentum(momentum);
+        lstmblock1->apply_momentum(momentum);
+        lstmblock2->apply_momentum(momentum);
+        lstmblock3->apply_momentum(momentum);
+        lstmblock4->apply_momentum(momentum);
+        lstmblock5->apply_momentum(momentum);
+        softmaxblock->apply_momentum(momentum);
         for(size_t batch=0;batch<batch_size;batch++)
         {
             //Pick what characters to feed to the lsmts
@@ -189,6 +206,7 @@ int main()
                 softmaxblock->calc(lstmblock5->get_output(i), i);
             }
 
+            double new_error=0;
             //Calculate deltas
             for(size_t i=asoiaf_length-1;;)
             {
@@ -196,6 +214,7 @@ int main()
                 Y.set(char_to_index[asoiaf_content[asoiaf_start+i]]);
 
                 softmaxblock->set_first_delta_and_propagate_with_cross_enthropy(Y.get(), lstmblock5->get_delta_output(i), i);
+                new_error+=softmaxblock->get_delta_output(i).sum_of_squares();
                 lstmblock5->propagate_delta(lstmblock4->get_delta_output(i), i, asoiaf_length);
                 lstmblock4->propagate_delta(lstmblock3->get_delta_output(i), i, asoiaf_length);
                 lstmblock3->propagate_delta(lstmblock2->get_delta_output(i), i, asoiaf_length);
@@ -204,6 +223,8 @@ int main()
                 perceptronblock->propagate_delta(i);
                 if(i--==0)break;
             }
+            error*=0.999;
+            error+=new_error*0.001;
 
             //Update gradients
             for(size_t i=0;i<asoiaf_length;i++)
@@ -220,13 +241,13 @@ int main()
                 softmaxblock->accumulate_gradients(lstmblock5->get_output(i), i);
             }
         }
-        perceptronblock->update_weights_ms(learning_rate, decay);
-        lstmblock1->update_weights_ms(learning_rate, decay);
-        lstmblock2->update_weights_ms(learning_rate, decay);
-        lstmblock3->update_weights_ms(learning_rate, decay);
-        lstmblock4->update_weights_ms(learning_rate, decay);
-        lstmblock5->update_weights_ms(learning_rate, decay);
-        softmaxblock->update_weights_ms(learning_rate, decay);
+        perceptronblock->update_weights_momentum(learning_rate);
+        lstmblock1->update_weights_momentum(learning_rate);
+        lstmblock2->update_weights_momentum(learning_rate);
+        lstmblock3->update_weights_momentum(learning_rate);
+        lstmblock4->update_weights_momentum(learning_rate);
+        lstmblock5->update_weights_momentum(learning_rate);
+        softmaxblock->update_weights_momentum(learning_rate);
 
 
         if(time(nullptr)-last_time>secons_between_saves)
@@ -266,11 +287,12 @@ int main()
                 assert(out.good());
                 out << "Current iteration: " << iteration << endl;
                 out << "Seconds elapsed since program started: " << time(nullptr)-first_time << endl;
-                out << "Optimizer: " << "rmsprop" << endl;
+                out << "Optimizer: " << "nag" << endl;
                 out << "Used memory cells: " << all_mem_cell_size << "x5" << endl;
                 out << "Batch size: " << batch_size << endl;
                 out << "Learning rate: " << learning_rate << endl;
-                out << "Decay: " << decay << endl;
+                out << "Momentum: " << momentum << endl;
+                out << "Error: " << error << endl;
                 out << endl;
                 out << endl;
                 out << endl;
@@ -313,7 +335,7 @@ int main()
             }
             print("State with number", save_counter, "saved");
         }
-        print("Iteration:", iteration);
+        print("Iteration:", iteration, "Error:", error);
     }
     return 0;
 }

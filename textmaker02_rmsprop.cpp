@@ -20,41 +20,37 @@ int main()
     static constexpr size_t output_quantity=5;
 
     static constexpr size_t allowed_char_amount=46;
-    static constexpr size_t min_training_chars=40;
+    static constexpr size_t min_training_chars=100;
     static constexpr size_t max_training_chars=500;
-    static constexpr time_t secons_between_saves=60*60;
+    static constexpr time_t secons_between_saves=6*60*60;
 
     static constexpr unsigned long input_size=allowed_char_amount;
     static constexpr unsigned long reduced_input_size=allowed_char_amount/4;
-    static constexpr unsigned long all_mem_cell_size=100;
+    static constexpr unsigned long first_mem_cell_size=512;
+    static constexpr unsigned long second_mem_cell_size=256;
+    static constexpr unsigned long third_mem_cell_size=128;
     static constexpr unsigned long output_mem_size=allowed_char_amount;
     double learning_rate=0.01;
     static constexpr double decay=0.9;
-    static constexpr size_t batch_size=5;
+    static constexpr size_t batch_size=10;
 
 
     using Block01=RMSPropTahnPerceptronBlock<input_size,reduced_input_size>;
-    using Block02=RMSPropLSTMBlock<reduced_input_size, all_mem_cell_size>;
-    using Block03=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block04=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block05=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block06=RMSPropLSTMBlock<all_mem_cell_size, all_mem_cell_size>;
-    using Block07=RMSPropSoftmaxBlock<all_mem_cell_size, output_mem_size>;
+    using Block02=RMSPropLSTMBlock<reduced_input_size, first_mem_cell_size>;
+    using Block03=RMSPropLSTMBlock<first_mem_cell_size, second_mem_cell_size>;
+    using Block04=RMSPropLSTMBlock<second_mem_cell_size, third_mem_cell_size>;
+    using Block05=RMSPropSoftmaxBlock<third_mem_cell_size, output_mem_size>;
 
     unique_ptr<Block01> perceptronblock(new Block01);
     unique_ptr<Block02> lstmblock1(new Block02);
     unique_ptr<Block03> lstmblock2(new Block03);
     unique_ptr<Block04> lstmblock3(new Block04);
-    unique_ptr<Block05> lstmblock4(new Block05);
-    unique_ptr<Block06> lstmblock5(new Block06);
-    unique_ptr<Block07> softmaxblock(new Block07);
+    unique_ptr<Block05> softmaxblock(new Block05);
 
     perceptronblock->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock1->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock2->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     lstmblock3->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
-    lstmblock4->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
-    lstmblock5->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
     softmaxblock->reserve_time_steps(max_training_chars>output_length?max_training_chars:output_length);
 
 
@@ -78,13 +74,14 @@ int main()
     std::uniform_int_distribution<size_t> dst_rdchar(0, allowed_char_amount-1);
 
     //Retrieve the number of the last saved state and last iteration (if exists) and the saved state with this number
+    double error=0;
     size_t save_counter=0;
     size_t iteration=0;
     {
         ifstream in(savecounter_filename, std::ios::binary);
         if(in.good())
         {
-            in >> save_counter >> iteration;
+            in >> save_counter >> iteration >> error;
             assert(save_counter!=0);
             {
                 char cbuffer[256];
@@ -95,8 +92,6 @@ int main()
                 lstmblock1->from_bin_file(in);
                 lstmblock2->from_bin_file(in);
                 lstmblock3->from_bin_file(in);
-                lstmblock4->from_bin_file(in);
-                lstmblock5->from_bin_file(in);
                 softmaxblock->from_bin_file(in);
             }
         }
@@ -157,9 +152,9 @@ int main()
     //All of the training happens within this loop
     for(;;iteration++)
     {
-        if(iteration%1000==0)
+        if(iteration%(1000/batch_size)==0)
         {
-            learning_rate=0.01*pow(0.954992586021436, (iteration/1000));// gets divided by 10 every 50k steps
+            learning_rate=0.01*pow(0.7943282347242815, (iteration/1000));// gets divided by 10 every 25k steps
         }
         for(size_t batch=0;batch<batch_size;batch++)
         {
@@ -170,8 +165,6 @@ int main()
             lstmblock1->set_time_steps(asoiaf_length);
             lstmblock2->set_time_steps(asoiaf_length);
             lstmblock3->set_time_steps(asoiaf_length);
-            lstmblock4->set_time_steps(asoiaf_length);
-            lstmblock5->set_time_steps(asoiaf_length);
             softmaxblock->set_time_steps(asoiaf_length);
 
             //Let the network calculate an output given the input
@@ -184,26 +177,28 @@ int main()
                 lstmblock1->calc(perceptronblock->get_output(i), i);
                 lstmblock2->calc(lstmblock1->get_output(i), i);
                 lstmblock3->calc(lstmblock2->get_output(i), i);
-                lstmblock4->calc(lstmblock3->get_output(i), i);
-                lstmblock5->calc(lstmblock4->get_output(i), i);
-                softmaxblock->calc(lstmblock5->get_output(i), i);
+                softmaxblock->calc(lstmblock3->get_output(i), i);
             }
 
+            double new_error=0;
             //Calculate deltas
             for(size_t i=asoiaf_length-1;;)
             {
                 //Set up output
                 Y.set(char_to_index[asoiaf_content[asoiaf_start+i]]);
 
-                softmaxblock->set_first_delta_and_propagate_with_cross_enthropy(Y.get(), lstmblock5->get_delta_output(i), i);
-                lstmblock5->propagate_delta(lstmblock4->get_delta_output(i), i, asoiaf_length);
-                lstmblock4->propagate_delta(lstmblock3->get_delta_output(i), i, asoiaf_length);
+                softmaxblock->set_first_delta_and_propagate_with_cross_enthropy(Y.get(), lstmblock3->get_delta_output(i), i);
+                new_error+=softmaxblock->get_delta_output(i).sum_of_squares();
                 lstmblock3->propagate_delta(lstmblock2->get_delta_output(i), i, asoiaf_length);
                 lstmblock2->propagate_delta(lstmblock1->get_delta_output(i), i, asoiaf_length);
                 lstmblock1->propagate_delta(perceptronblock->get_delta_output(i), i, asoiaf_length);
                 perceptronblock->propagate_delta(i);
                 if(i--==0)break;
             }
+            new_error/=batch_size;
+            new_error/=asoiaf_length;
+            error*=0.999;
+            error+=new_error*0.001;
 
             //Update gradients
             for(size_t i=0;i<asoiaf_length;i++)
@@ -215,17 +210,13 @@ int main()
                 lstmblock1->accumulate_gradients(perceptronblock->get_output(i), i);
                 lstmblock2->accumulate_gradients(lstmblock1->get_output(i), i);
                 lstmblock3->accumulate_gradients(lstmblock2->get_output(i), i);
-                lstmblock4->accumulate_gradients(lstmblock3->get_output(i), i);
-                lstmblock5->accumulate_gradients(lstmblock4->get_output(i), i);
-                softmaxblock->accumulate_gradients(lstmblock5->get_output(i), i);
+                softmaxblock->accumulate_gradients(lstmblock3->get_output(i), i);
             }
         }
         perceptronblock->update_weights_ms(learning_rate, decay);
         lstmblock1->update_weights_ms(learning_rate, decay);
         lstmblock2->update_weights_ms(learning_rate, decay);
         lstmblock3->update_weights_ms(learning_rate, decay);
-        lstmblock4->update_weights_ms(learning_rate, decay);
-        lstmblock5->update_weights_ms(learning_rate, decay);
         softmaxblock->update_weights_ms(learning_rate, decay);
 
 
@@ -244,8 +235,6 @@ int main()
                 lstmblock1->to_bin_file(out);
                 lstmblock2->to_bin_file(out);
                 lstmblock3->to_bin_file(out);
-                lstmblock4->to_bin_file(out);
-                lstmblock5->to_bin_file(out);
                 softmaxblock->to_bin_file(out);
             }
             {
@@ -255,8 +244,6 @@ int main()
                 lstmblock1->only_wb_to_bin_file(out);
                 lstmblock2->only_wb_to_bin_file(out);
                 lstmblock3->only_wb_to_bin_file(out);
-                lstmblock4->only_wb_to_bin_file(out);
-                lstmblock5->only_wb_to_bin_file(out);
                 softmaxblock->only_wb_to_bin_file(out);
             }
             //Save some data and some output examples to file
@@ -267,10 +254,11 @@ int main()
                 out << "Current iteration: " << iteration << endl;
                 out << "Seconds elapsed since program started: " << time(nullptr)-first_time << endl;
                 out << "Optimizer: " << "rmsprop" << endl;
-                out << "Used memory cells: " << all_mem_cell_size << "x5" << endl;
+                out << "Used memory cells: " << first_mem_cell_size << ", " << second_mem_cell_size << ", " << third_mem_cell_size << endl;
                 out << "Batch size: " << batch_size << endl;
                 out << "Learning rate: " << learning_rate << endl;
                 out << "Decay: " << decay << endl;
+                out << "Error: " << error << endl;
                 out << endl;
                 out << endl;
                 out << endl;
@@ -283,8 +271,6 @@ int main()
                     lstmblock1->set_time_steps(output_length);
                     lstmblock2->set_time_steps(output_length);
                     lstmblock3->set_time_steps(output_length);
-                    lstmblock4->set_time_steps(output_length);
-                    lstmblock5->set_time_steps(output_length);
                     softmaxblock->set_time_steps(output_length);
                     for(size_t i=0;i<output_length;i++)
                     {
@@ -294,9 +280,7 @@ int main()
                         lstmblock1->calc(perceptronblock->get_output(i), i);
                         lstmblock2->calc(lstmblock1->get_output(i), i);
                         lstmblock3->calc(lstmblock2->get_output(i), i);
-                        lstmblock4->calc(lstmblock3->get_output(i), i);
-                        lstmblock5->calc(lstmblock4->get_output(i), i);
-                        softmaxblock->calc(lstmblock5->get_output(i), i);
+                        softmaxblock->calc(lstmblock3->get_output(i), i);
                         next_input_index=get_weighted_random_index(softmaxblock->get_output(i)[0]);
                         out << index_to_char[next_input_index];
                     }
@@ -309,11 +293,11 @@ int main()
             {
                 ofstream out(savecounter_filename,std::ios_base::trunc);
                 assert(out.good());
-                out << save_counter << "\t" << iteration << endl;
+                out << save_counter << "\t" << iteration << "\t" << error << endl;
             }
             print("State with number", save_counter, "saved");
         }
-        print("Iteration:", iteration);
+        print("Iteration:", iteration, "Error:", error);
     }
     return 0;
 }

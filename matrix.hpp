@@ -697,6 +697,15 @@ public:
         return sum;
     }
 
+    inline double sum_of_squares() noexcept
+    {
+        double sum=0.0;
+        for(auto &row:*this)
+            for(auto &element:row)
+                sum+=element*element;
+        return sum;
+    }
+
     template<unsigned long A, unsigned long B, unsigned long C, unsigned long D>
     inline void set_from_four(const Matrix<1, A> &a, const Matrix<1, B> &b, const Matrix<1, C> &c, const Matrix<1, D> &d) noexcept
     {
