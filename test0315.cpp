@@ -54,15 +54,16 @@ public:
     }
 };
 
+template<unsigned long first_mem_cell_size, unsigned long second_mem_cell_size, unsigned long third_mem_cell_size>
 class MyVNet
 {
 private:
     static constexpr size_t allowed_char_amount=46;
     static constexpr unsigned long input_size=allowed_char_amount;
     static constexpr unsigned long reduced_input_size=allowed_char_amount/4;
-    static constexpr unsigned long first_mem_cell_size=400;
-    static constexpr unsigned long second_mem_cell_size=200;
-    static constexpr unsigned long third_mem_cell_size=100;
+    // static constexpr unsigned long first_mem_cell_size=400;
+    // static constexpr unsigned long second_mem_cell_size=200;
+    // static constexpr unsigned long third_mem_cell_size=100;
     static constexpr unsigned long output_mem_size=allowed_char_amount;
 
     using Block01=BaseTahnPerceptronBlock<input_size,reduced_input_size>;
@@ -108,26 +109,14 @@ public:
     }
 };
 
-
+// output[0][char_to_index['.']]*=10;
 int main()
 {
     static constexpr size_t output_size=2000;
-    // MyNet myneta("outs/26a.wab");
-    // MyNet mynetn("outs/26n.wab");
-    // MyNet mynetr("outs/26r.wab");
-    // MyNet mynets("outs/26s.wab");
-    MyVNet myvneta("outs/56va.wab");
-    MyVNet myvnetn("outs/56vn.wab");
-    MyVNet myvnetr("outs/56vr.wab");
-    MyVNet myvnets("outs/56vs.wab");
-    // myneta.set_time_steps(output_size);
-    // mynetn.set_time_steps(output_size);
-    // mynetr.set_time_steps(output_size);
-    // mynets.set_time_steps(output_size);
-    myvneta.set_time_steps(output_size);
-    myvnetn.set_time_steps(output_size);
-    myvnetr.set_time_steps(output_size);
-    myvnets.set_time_steps(output_size);
+    MyVNet<512,256,128> mynetn("outs/tn.wab");
+    MyVNet<512,256,128> mynetr("outs/tr.wab");
+    mynetn.set_time_steps(output_size);
+    mynetr.set_time_steps(output_size);
 
     //Setup the char_to_index and index_to_char mappings
     static constexpr size_t allowed_char_amount=46;
@@ -141,29 +130,28 @@ int main()
     X.set(char_to_index['.']);
     for(size_t i=0;i<output_size;i++)
     {
-        // const Matrix<1,output_mem_size>& outsa=myneta.calc(X.get(), i);
-        // const Matrix<1,output_mem_size>& outsn=mynetn.calc(X.get(), i);
-        // const Matrix<1,output_mem_size>& outsr=mynetr.calc(X.get(), i);
-        // const Matrix<1,output_mem_size>& outss=mynets.calc(X.get(), i);
-        const Matrix<1,output_mem_size>& outva=myvneta.calc(X.get(), i);
-        const Matrix<1,output_mem_size>& outvn=myvnetn.calc(X.get(), i);
-        const Matrix<1,output_mem_size>& outvr=myvnetr.calc(X.get(), i);
-        const Matrix<1,output_mem_size>& outvs=myvnets.calc(X.get(), i);
-        Matrix<1,output_mem_size> output(1.0);
-        // output.mul(outsa);
-        // output.mul(outsn);
-        // output.mul(outsr);
-        // output.mul(outss);
-        output.mul(outva);
-        output.mul(outvn);
-        output.mul(outvr);
-        output.mul(outvs);
-        output[0][char_to_index['.']]*=10;
+        const Matrix<1,output_mem_size>& outn=mynetn.calc(X.get(), i);
+        const Matrix<1,output_mem_size>& outr=mynetr.calc(X.get(), i);
+        // Matrix<1,output_mem_size> output(1.0);
+        // output.mul(outn);
+        // output.mul(outr);
+        Matrix<1,output_mem_size> output;
+        {
+            output.set(0.0);
+            output.add(outn);
+            output.add(outr);
+            for(size_t j=0;j<output_mem_size;j++) if(outn[0][j]<.01 or outr[0][j]<.01) output[0][j]=.0;
+            if(output.sum()==0)
+            {
+                output.set(outn);
+                output.mul(outr);
+                cout << "(**)";
+            }
+        }
         output.div(output.sum());
-        // print(output);
         size_t new_char_index=get_weighted_random_index(output[0]);
         cout << index_to_char[new_char_index];
-        if(new_char_index==char_to_index['.']) break;
+        // if(new_char_index==char_to_index['.']) break;
         X.set(new_char_index);
     }
     print();

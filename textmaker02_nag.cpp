@@ -163,8 +163,8 @@ int main()
             if(iteration<=50000) momentum=0.5+0.008*(iteration/1000);
             else if(iteration<=100000)momentum=0.9+0.0018*((iteration-50000)/1000);
             else if(iteration<=150000)momentum=0.99+0.00018*((iteration-100000)/1000);
-            else if(iteration<=200000)momentum=0.999+0.000018*((iteration-150000)/1000);
-            else momentum=.9999;
+            // else if(iteration<=200000)momentum=0.999+0.000018*((iteration-150000)/1000);
+            else momentum=.999;
         }
         perceptronblock->apply_momentum(momentum);
         lstmblock1->apply_momentum(momentum);

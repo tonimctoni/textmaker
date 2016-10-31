@@ -32,7 +32,7 @@ int main()
     static constexpr unsigned long output_mem_size=allowed_char_amount;
     double learning_rate=0.01;
     static constexpr double decay=0.9;
-    static constexpr size_t batch_size=10;
+    static constexpr size_t batch_size=5;
 
 
     using Block01=RMSPropTahnPerceptronBlock<input_size,reduced_input_size>;
@@ -154,7 +154,7 @@ int main()
     {
         if(iteration%(1000/batch_size)==0)
         {
-            learning_rate=0.01*pow(0.7943282347242815, (iteration/1000));// gets divided by 10 every 25k steps
+            learning_rate=0.01*pow(0.8912509381337456, (iteration/1000));// gets divided by 10 every 20k steps
         }
         for(size_t batch=0;batch<batch_size;batch++)
         {
