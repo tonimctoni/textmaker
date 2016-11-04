@@ -31,7 +31,7 @@ int main()
     static constexpr unsigned long third_mem_cell_size=128;
     static constexpr unsigned long output_mem_size=allowed_char_amount;
     double learning_rate=0.01;
-    double momentum=0.5;
+    double momentum=0.9;
     static constexpr size_t batch_size=1;
 
 
@@ -160,11 +160,15 @@ int main()
         if(iteration%1000==0)
         {
             learning_rate=0.01*pow(0.9549925860214360, (iteration/1000));// gets divided by 10 every 50k steps
-            if(iteration<=50000) momentum=0.5+0.008*(iteration/1000);
-            else if(iteration<=100000)momentum=0.9+0.0018*((iteration-50000)/1000);
-            else if(iteration<=150000)momentum=0.99+0.00018*((iteration-100000)/1000);
-            // else if(iteration<=200000)momentum=0.999+0.000018*((iteration-150000)/1000);
-            else momentum=.999;
+            if(iteration<=15000) momentum=.9+.006*(iteration/1000);
+            else if(iteration<=50000)momentum=.99+.0002571428571428571*((iteration-15000)/1000);
+            else if(iteration<=100000)momentum=.999+(1.8e-05)*((iteration-50000)/1000);
+            else momentum=.9999;
+            // if(iteration<=50000) momentum=0.5+0.008*(iteration/1000);
+            // else if(iteration<=100000)momentum=0.9+0.0018*((iteration-50000)/1000);
+            // else if(iteration<=150000)momentum=0.99+0.00018*((iteration-100000)/1000);
+            // // else if(iteration<=200000)momentum=0.999+0.000018*((iteration-150000)/1000);
+            // else momentum=.999;
         }
         perceptronblock->apply_momentum(momentum);
         lstmblock1->apply_momentum(momentum);
