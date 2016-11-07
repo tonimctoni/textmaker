@@ -5,6 +5,8 @@
 #include <string>
 #include <random>
 #include <fstream>
+#include <array>
+#include <vector>
 
 //Exception to be thrown on assertion fails.
 class AssertionException : public std::exception
@@ -142,5 +144,27 @@ inline void read_file_to_string(const char *filename, std::string &out_str, size
     in.seekg(0, std::ios::beg);
     in.read(&out_str[0], size_t(in.tellg())>max_size?max_size:size_t(in.tellg()));
     in.close();
+}
+
+std::vector<std::string> split_string(const std::string &str, const std::string &sep)
+{
+    assert(str.size()>0);
+    assert(sep.size()>0);
+    assert(str.size()>sep.size());
+    std::vector<std::string> ret;
+    size_t index=0;
+    for(;;)
+    {
+        if(index>=str.size()) break;
+        size_t sep_index=str.find(sep, index);
+        if(sep_index==std::string::npos) sep_index=str.size();
+
+        ret.emplace_back(str, index, sep_index-index);
+
+        index=sep_index+sep.size();
+    }
+
+
+    return ret;
 }
 #endif
