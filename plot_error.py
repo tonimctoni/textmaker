@@ -110,7 +110,7 @@ plt.plot(X,Y, "r", X,Y, "ro")
 # Text NAG with larger neural network
 X,Y=myfun("outs/tm02/tnl")
 Y=divide(Y, 46)
-plt.plot(X,Y, "g--", X,Y, "g*")
+plt.plot(X[1:],Y[1:], "g--", X[1:],Y[1:], "g*")
 
 # Text RMSProp with larger neural network
 X,Y=myfun("outs/tm02/trl")

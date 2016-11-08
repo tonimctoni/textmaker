@@ -124,6 +124,17 @@ inline size_t get_weighted_random_index(const std::array<double, N> &arr)
     assert(0);
 }
 
+template<unsigned long N>
+inline size_t get_max_index(const std::array<double, N> &arr)
+{
+    size_t max_index=0;
+    for(size_t i=1;i<N;i++)
+    {
+        if(arr[i]>arr[max_index])max_index=i;
+    }
+    return max_index;
+}
+
 inline void read_file_to_string(const char *filename, std::string &out_str)
 {
     std::ifstream in(filename, std::ios::in | std::ios::binary);

@@ -72,11 +72,13 @@ int main()
     static constexpr unsigned long output_mem_size=allowed_char_amount;
 
 
-    static constexpr size_t output_size=75;
+    static constexpr size_t output_size=125;
     string start_string;
     string end_stringn;
     string end_stringr;
-    string end_stringc;
+    // string end_stringc;
+    string end_strings;
+    string end_stringm;
     print("Starting string:");
     getline(cin, start_string);
     OneHot<input_size> X;
@@ -85,6 +87,8 @@ int main()
 
     end_stringn.reserve(output_size);
     end_stringr.reserve(output_size);
+    end_strings.reserve(output_size);
+    end_stringm.reserve(output_size);
     for(size_t i=0;i<start_string.size();i++)
     {
         if(i<start_string.size()-1)
@@ -110,55 +114,101 @@ int main()
     }
 
 
-    for(size_t i=0;i<start_string.size()-1;i++)
-    {
-        X.set(char_to_index.at(start_string[i]));
-        mynetn.calc(X.get(), i);
-        mynetr.calc(X.get(), i);
-    }
+    // for(size_t i=0;i<start_string.size()-1;i++)
+    // {
+    //     X.set(char_to_index.at(start_string[i]));
+    //     mynetn.calc(X.get(), i);
+    //     mynetr.calc(X.get(), i);
+    // }
+    // X.set(char_to_index.at(start_string.back()));
+    // auto& outn=mynetn.calc(X.get(), start_string.size()-1);
+    // auto& outr=mynetr.calc(X.get(), start_string.size()-1);
+    // Matrix<1,output_mem_size> output;
+    // output.set(0.0);
+    // output.add(outn);
+    // output.add(outr);
+    // for(size_t j=0;j<output_mem_size;j++) if(outn[0][j]<.01 or outr[0][j]<.01) output[0][j]=.0;
+    // if(output.sum()==0)
+    // {
+    //     output.set(outn);
+    //     output.mul(outr);
+    //     cout << "(**)";
+    // }
+    // output.div(output.sum());
+    // end_stringc.push_back(index_to_char.at(get_weighted_random_index(output[0])));
 
-    X.set(char_to_index.at(start_string.back()));
-    auto& outn=mynetn.calc(X.get(), start_string.size()-1);
-    auto& outr=mynetr.calc(X.get(), start_string.size()-1);
-    Matrix<1,output_mem_size> output;
-    output.set(0.0);
-    output.add(outn);
-    output.add(outr);
-    for(size_t j=0;j<output_mem_size;j++) if(outn[0][j]<.01 or outr[0][j]<.01) output[0][j]=.0;
-    if(output.sum()==0)
-    {
-        output.set(outn);
-        output.mul(outr);
-        cout << "(**)";
-    }
-    output.div(output.sum());
-    end_stringc.push_back(index_to_char.at(get_weighted_random_index(output[0])));
+    // for(size_t i=start_string.size();i<start_string.size()+output_size-1;i++)
+    // {
+    //     X.set(char_to_index.at(end_stringc.back()));
+    //     auto& outn=mynetn.calc(X.get(), i);
+    //     auto& outr=mynetr.calc(X.get(), i);
+    //     output.set(0.0);
+    //     output.add(outn);
+    //     output.add(outr);
+    //     for(size_t j=0;j<output_mem_size;j++) if(outn[0][j]<.01 or outr[0][j]<.01) output[0][j]=.0;
+    //     if(output.sum()==0)
+    //     {
+    //         output.set(outn);
+    //         output.mul(outr);
+    //         cout << "(**)";
+    //     }
+    //     output.div(output.sum());
+    //     end_stringc.push_back(index_to_char.at(get_weighted_random_index(output[0])));
+    // }
 
-    for(size_t i=start_string.size();i<start_string.size()+output_size-1;i++)
     {
-        X.set(char_to_index.at(end_stringc.back()));
-        auto& outn=mynetn.calc(X.get(), i);
-        auto& outr=mynetr.calc(X.get(), i);
-        output.set(0.0);
-        output.add(outn);
-        output.add(outr);
-        for(size_t j=0;j<output_mem_size;j++) if(outn[0][j]<.01 or outr[0][j]<.01) output[0][j]=.0;
-        if(output.sum()==0)
+        for(size_t i=0;i<start_string.size()-1;i++)
         {
-            output.set(outn);
-            output.mul(outr);
-            cout << "(**)";
+            X.set(char_to_index.at(start_string[i]));
+            mynetn.calc(X.get(), i);
+            mynetr.calc(X.get(), i);
         }
+        X.set(char_to_index.at(start_string.back()));
+        Matrix<1,output_mem_size> output;
+        output.set(mynetn.calc(X.get(), start_string.size()-1));
+        output.add(mynetr.calc(X.get(), start_string.size()-1));
         output.div(output.sum());
-        end_stringc.push_back(index_to_char.at(get_weighted_random_index(output[0])));
+        end_strings.push_back(index_to_char.at(get_weighted_random_index(output[0])));
+
+        for(size_t i=start_string.size();i<start_string.size()+output_size-1;i++)
+        {
+            X.set(char_to_index.at(end_strings.back()));
+            output.set(mynetn.calc(X.get(), i));
+            output.add(mynetr.calc(X.get(), i));
+            output.div(output.sum());
+            end_strings.push_back(index_to_char.at(get_weighted_random_index(output[0])));
+        }
     }
 
+    {
+        for(size_t i=0;i<start_string.size()-1;i++)
+        {
+            X.set(char_to_index.at(start_string[i]));
+            mynetn.calc(X.get(), i);
+            mynetr.calc(X.get(), i);
+        }
+        X.set(char_to_index.at(start_string.back()));
+        Matrix<1,output_mem_size> output;
+        output.set(mynetn.calc(X.get(), start_string.size()-1));
+        output.mul(mynetr.calc(X.get(), start_string.size()-1));
+        output.div(output.sum());
+        end_stringm.push_back(index_to_char.at(get_weighted_random_index(output[0])));
 
+        for(size_t i=start_string.size();i<start_string.size()+output_size-1;i++)
+        {
+            X.set(char_to_index.at(end_stringm.back()));
+            output.set(mynetn.calc(X.get(), i));
+            output.mul(mynetr.calc(X.get(), i));
+            output.div(output.sum());
+            end_stringm.push_back(index_to_char.at(get_weighted_random_index(output[0])));
+        }
+    }
 
 
     print(start_string+end_stringn);
     print(start_string+end_stringr);
-    print(start_string+end_stringc);
+    print(start_string+end_strings);
+    print(start_string+end_stringm);
 
 
     return 0;
