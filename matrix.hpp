@@ -616,7 +616,6 @@ public:
         for(auto &row:*this)
             for(auto &element:row)
                 element=tanh(element);
-            
     }
 
     inline void apply_softmax() noexcept
@@ -630,6 +629,14 @@ public:
         for(auto &row:*this)
             for(auto &element:row)
                 element/=sum;
+    }
+
+    inline void apply_rectifier() noexcept
+    {
+        for(auto &row:*this)
+            for(auto &element:row)
+                if(element<0) element=0;
+                // element=element<0?0:element;
     }
 
     inline void mult_after_func01(const Matrix &a) noexcept
@@ -654,6 +661,14 @@ public:
                 (*this)[i][j]*=(a[i][j])*(1.0-a[i][j]);
     }
 
+    inline void mult_after_func04(const Matrix &a) noexcept
+    {
+        for(size_t i=0;i<M;i++)
+            for(size_t j=0;j<N;j++)
+                if(a[i][j]<=0) (*this)[i][j]=0;
+                // (*this)[i][j]*=a[i][j];
+    }
+
     inline void randomize_for_nn(std::normal_distribution<double>::result_type scal) noexcept
     {
         std::random_device rd;
@@ -669,6 +684,17 @@ public:
         std::random_device rd;
         std::mt19937 gen(rd());
         std::normal_distribution<double> dst(0,1.0/(sqrt(M)));
+        for(auto &row:*this)
+            for(auto &element:row)
+                element=dst(gen);
+    }
+
+    inline void randomize_for_relu_nn() noexcept
+    {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        double a=sqrt(12.0/(M+N));
+        std::uniform_real_distribution<double> dst(-a,a);
         for(auto &row:*this)
             for(auto &element:row)
                 element=dst(gen);
@@ -785,12 +811,12 @@ public:
         }
     }
 
-    inline void add_factor_mul_a_mul_a(const double factor, const Matrix& a) noexcept
-    {
-        for(size_t i=0;i<M;i++)
-            for(size_t j=0;j<N;j++)
-                (*this)[i][j]+=factor*a[i][j]*a[i][j];
-    }
+    // inline void add_factor_mul_a_mul_a(const double factor, const Matrix& a) noexcept
+    // {
+    //     for(size_t i=0;i<M;i++)
+    //         for(size_t j=0;j<N;j++)
+    //             (*this)[i][j]+=factor*a[i][j]*a[i][j];
+    // }
 
     inline void add_a_mul_rate_div_sqrt_b(const Matrix& a, const double rate, const Matrix& b) noexcept
     {

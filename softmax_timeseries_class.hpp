@@ -121,6 +121,12 @@ public:
     {
     }
 
+    inline void reset_momentum() noexcept
+    {
+        moment_weights.set(0.0);
+        moment_bias.set(0.0);
+    }
+
     inline void to_file(std::ofstream &out) const noexcept
     {
         weights.to_file(out);
@@ -265,8 +271,6 @@ public:
     using BaseSoftmaxBlock<input_size, output_size>::bias_gradient_accumulator;
     RMSPropSoftmaxBlock(size_t time_steps=0) noexcept:BaseSoftmaxBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0)
     {
-        weights.randomize_for_nn(input_size+1);
-        bias.randomize_for_nn(input_size+1);
     }
 
     inline void to_file(std::ofstream &out) const noexcept

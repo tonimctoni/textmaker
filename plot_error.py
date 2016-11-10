@@ -107,6 +107,25 @@ X=multiply(X,5)
 Y=multiply(Y,5)
 plt.plot(X,Y, "r", X,Y, "ro")
 
+# Text Adam
+X,Y=myfun("outs/tm02/ta")
+Y=divide(Y, 46)
+X=multiply(X,5)
+Y=multiply(Y,5)
+plt.plot(X,Y, "m", X,Y, "mo")
+
+# # Test 18b (nag)
+# X,Y=myfun("outs/tm02/ts18b")
+# Y=divide(Y, 46)
+# plt.plot(X,Y, "c", X,Y, "cs")
+
+# # Test 18c (adam)
+# X,Y=myfun("outs/tm02/ts18c")
+# Y=divide(Y, 46)
+# X=multiply(X,5)
+# Y=multiply(Y,5)
+# plt.plot(X,Y, "c", X,Y, "c^")
+
 # Text NAG with larger neural network
 X,Y=myfun("outs/tm02/tnl")
 Y=divide(Y, 46)
@@ -117,7 +136,7 @@ X,Y=myfun("outs/tm02/trl")
 Y=divide(Y, 46)
 X=multiply(X,5)
 Y=multiply(Y,5)
-plt.plot(X,Y, "r--", X,Y, "r*")
+plt.plot(X[1:],Y[1:], "r--", X[1:],Y[1:], "r*")
 
 # Text NAG higher learning rate
 # X,Y=myfun("outs/tm02/tns")
@@ -132,11 +151,11 @@ plt.plot(X,Y, "r--", X,Y, "r*")
 # plt.plot(X,Y, "r", X,Y, "rs")
 
 # Text RMSProp more data
-X,Y=myfun("outs/tm02/trm")
-Y=divide(Y, 46)
-X=multiply(X,5*2)
-Y=multiply(Y,5)
-plt.plot(X,Y, "r", X,Y, "r^")
+# X,Y=myfun("outs/tm02/trm")
+# Y=divide(Y, 46)
+# X=multiply(X,5*2)
+# Y=multiply(Y,5)
+# plt.plot(X,Y, "r", X,Y, "r^")
 
 # CSS RMSProp
 X,Y=myfun("outs/tm02/cr")

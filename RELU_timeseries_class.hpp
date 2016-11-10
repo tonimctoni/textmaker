@@ -12,7 +12,7 @@ struct LayerState
 #endif
 
 template<unsigned long input_size, unsigned long output_size>
-class BaseTahnPerceptronBlock
+class BaseRELUBlock
 {
 protected:
     std::vector<LayerState<input_size, output_size>> layer_states;
@@ -21,10 +21,10 @@ protected:
     Matrix<input_size, output_size> weight_gradient_accumulator;
     Matrix<1, output_size> bias_gradient_accumulator;
 public:
-    BaseTahnPerceptronBlock(size_t time_steps=0) noexcept:layer_states(time_steps), weight_gradient_accumulator(0.0), bias_gradient_accumulator(0.0)
+    BaseRELUBlock(size_t time_steps=0) noexcept:layer_states(time_steps), weight_gradient_accumulator(0.0), bias_gradient_accumulator(0.0)
     {
-        weights.randomize_for_nn(input_size+1);
-        bias.randomize_for_nn(input_size+1);
+        weights.randomize_for_relu_nn();
+        bias.randomize_for_relu_nn();
     }
 
     inline void only_wb_to_bin_file(std::ofstream &out) const noexcept
@@ -55,7 +55,7 @@ public:
 
         layer_states[time_step].output.equals_a_dot_b(X, weights);
         layer_states[time_step].output.add(bias);
-        layer_states[time_step].output.apply_tanh();
+        layer_states[time_step].output.apply_rectifier();
     }
 
     inline void set_first_delta(const Matrix<1,output_size> &Y, size_t time_step) noexcept
@@ -69,7 +69,7 @@ public:
     {
         assert(time_step<layer_states.size());
         //Propagate delta
-        layer_states[time_step].delta_output.mult_after_func02(layer_states[time_step].output);
+        layer_states[time_step].delta_output.mult_after_func04(layer_states[time_step].output);
     }
 
     inline void propagate_delta(Matrix<1,input_size> &X_delta, size_t time_step) noexcept
@@ -97,26 +97,49 @@ public:
 };
 
 template<unsigned long input_size, unsigned long output_size>
-class NAGTahnPerceptronBlock : public BaseTahnPerceptronBlock<input_size, output_size>
+class SGDRELUBlock : public BaseRELUBlock<input_size, output_size>
 {
 private:
     Matrix<input_size, output_size> moment_weights;
     Matrix<1, output_size> moment_bias;
 public:
-    using BaseTahnPerceptronBlock<input_size, output_size>::layer_states;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weights;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weight_gradient_accumulator;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias_gradient_accumulator;
-    NAGTahnPerceptronBlock(size_t time_steps=0) noexcept
-    :BaseTahnPerceptronBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0)
+    using BaseRELUBlock<input_size, output_size>::layer_states;
+    using BaseRELUBlock<input_size, output_size>::weights;
+    using BaseRELUBlock<input_size, output_size>::bias;
+    using BaseRELUBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseRELUBlock<input_size, output_size>::bias_gradient_accumulator;
+    SGDRELUBlock(size_t time_steps=0) noexcept
+    :BaseRELUBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0)
     {
     }
 
-    inline void reset_momentum() noexcept
+    inline void update_weights(const double learning_rate) noexcept
     {
-        moment_weights.set(0.0);
-        moment_bias.set(0.0);
+        weights.add_factor_mul_a(learning_rate, weight_gradient_accumulator);
+        bias.add_factor_mul_a(learning_rate, bias_gradient_accumulator);
+        // update_weight_momentum(weights, moment_weights, weight_gradient_accumulator, learning_rate);
+        // update_weight_momentum(bias, moment_bias, bias_gradient_accumulator, learning_rate);
+
+        weight_gradient_accumulator.set(0.0);
+        bias_gradient_accumulator.set(0.0);
+    }
+};
+
+template<unsigned long input_size, unsigned long output_size>
+class NAGRELUBlock : public BaseRELUBlock<input_size, output_size>
+{
+private:
+    Matrix<input_size, output_size> moment_weights;
+    Matrix<1, output_size> moment_bias;
+public:
+    using BaseRELUBlock<input_size, output_size>::layer_states;
+    using BaseRELUBlock<input_size, output_size>::weights;
+    using BaseRELUBlock<input_size, output_size>::bias;
+    using BaseRELUBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseRELUBlock<input_size, output_size>::bias_gradient_accumulator;
+    NAGRELUBlock(size_t time_steps=0) noexcept
+    :BaseRELUBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0)
+    {
     }
 
     inline void to_file(std::ofstream &out) const noexcept
@@ -170,7 +193,7 @@ public:
 };
 
 template<unsigned long input_size, unsigned long output_size>
-class SpeedyTahnPerceptronBlock : public BaseTahnPerceptronBlock<input_size, output_size>
+class SpeedyRELUBlock : public BaseRELUBlock<input_size, output_size>
 {
 private:
     Matrix<input_size, output_size> moment_weights;
@@ -178,12 +201,12 @@ private:
     Matrix<input_size, output_size> ms_weights;
     Matrix<1, output_size> ms_bias;
 public:
-    using BaseTahnPerceptronBlock<input_size, output_size>::layer_states;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weights;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weight_gradient_accumulator;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias_gradient_accumulator;
-    SpeedyTahnPerceptronBlock(size_t time_steps=0) noexcept:BaseTahnPerceptronBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0),ms_weights(1.0), ms_bias(1.0)
+    using BaseRELUBlock<input_size, output_size>::layer_states;
+    using BaseRELUBlock<input_size, output_size>::weights;
+    using BaseRELUBlock<input_size, output_size>::bias;
+    using BaseRELUBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseRELUBlock<input_size, output_size>::bias_gradient_accumulator;
+    SpeedyRELUBlock(size_t time_steps=0) noexcept:BaseRELUBlock<input_size, output_size>(time_steps),moment_weights(0.0),moment_bias(0.0),ms_weights(1.0), ms_bias(1.0)
     {
     }
 
@@ -250,18 +273,18 @@ public:
 };
 
 template<unsigned long input_size, unsigned long output_size>
-class RMSPropTahnPerceptronBlock : public BaseTahnPerceptronBlock<input_size, output_size>
+class RMSPropRELUBlock : public BaseRELUBlock<input_size, output_size>
 {
 private:
     Matrix<input_size, output_size> ms_weights;
     Matrix<1, output_size> ms_bias;
 public:
-    using BaseTahnPerceptronBlock<input_size, output_size>::layer_states;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weights;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weight_gradient_accumulator;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias_gradient_accumulator;
-    RMSPropTahnPerceptronBlock(size_t time_steps=0) noexcept:BaseTahnPerceptronBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0)
+    using BaseRELUBlock<input_size, output_size>::layer_states;
+    using BaseRELUBlock<input_size, output_size>::weights;
+    using BaseRELUBlock<input_size, output_size>::bias;
+    using BaseRELUBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseRELUBlock<input_size, output_size>::bias_gradient_accumulator;
+    RMSPropRELUBlock(size_t time_steps=0) noexcept:BaseRELUBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0)
     {
     }
 
@@ -312,7 +335,7 @@ public:
 };
 
 template<unsigned long input_size, unsigned long output_size>
-class AdamTahnPerceptronBlock : public BaseTahnPerceptronBlock<input_size, output_size>
+class AdamRELUBlock : public BaseRELUBlock<input_size, output_size>
 {
 private:
     Matrix<input_size, output_size> ms_weights;
@@ -320,12 +343,12 @@ private:
     Matrix<input_size, output_size> mns_weights;
     Matrix<1, output_size> mns_bias;
 public:
-    using BaseTahnPerceptronBlock<input_size, output_size>::layer_states;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weights;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias;
-    using BaseTahnPerceptronBlock<input_size, output_size>::weight_gradient_accumulator;
-    using BaseTahnPerceptronBlock<input_size, output_size>::bias_gradient_accumulator;
-    AdamTahnPerceptronBlock(size_t time_steps=0) noexcept:BaseTahnPerceptronBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0),mns_weights(1.0), mns_bias(1.0)
+    using BaseRELUBlock<input_size, output_size>::layer_states;
+    using BaseRELUBlock<input_size, output_size>::weights;
+    using BaseRELUBlock<input_size, output_size>::bias;
+    using BaseRELUBlock<input_size, output_size>::weight_gradient_accumulator;
+    using BaseRELUBlock<input_size, output_size>::bias_gradient_accumulator;
+    AdamRELUBlock(size_t time_steps=0) noexcept:BaseRELUBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0),mns_weights(1.0), mns_bias(1.0)
     {
     }
 

@@ -30,7 +30,7 @@ struct LstmState
 #endif
 
 template<unsigned long input_size, unsigned long mem_cell_size>
-class BaseLSTMBlock
+class BaseRELULSTMBlock
 {
 protected:
     std::vector<LstmState<input_size, mem_cell_size>> lstm_states;
@@ -66,23 +66,23 @@ protected:
     Matrix<1, mem_cell_size> bias_o_gradient_acc;
 public:
     //Constructor: randomizes the weights and biases
-    BaseLSTMBlock(size_t time_steps=0) noexcept:lstm_states(time_steps)
+    BaseRELULSTMBlock(size_t time_steps=0) noexcept:lstm_states(time_steps)
     , weights_xg_gradient_acc(0.0), weights_xi_gradient_acc(0.0), weights_xf_gradient_acc(0.0), weights_xo_gradient_acc(0.0)
     , weights_hg_gradient_acc(0.0), weights_hi_gradient_acc(0.0), weights_hf_gradient_acc(0.0), weights_ho_gradient_acc(0.0)
     , bias_g_gradient_acc(0.0), bias_i_gradient_acc(0.0), bias_f_gradient_acc(0.0), bias_o_gradient_acc(0.0)
     {
-        weights_xg.randomize_for_nn(concat_size+1);
-        weights_xi.randomize_for_nn(concat_size+1);
-        weights_xf.randomize_for_nn(concat_size+1);
-        weights_xo.randomize_for_nn(concat_size+1);
-        weights_hg.randomize_for_nn(concat_size+1);
-        weights_hi.randomize_for_nn(concat_size+1);
-        weights_hf.randomize_for_nn(concat_size+1);
-        weights_ho.randomize_for_nn(concat_size+1);
-        bias_g.randomize_for_nn(concat_size+1);
-        bias_i.randomize_for_nn(concat_size+1);
-        bias_f.randomize_for_nn(concat_size+1);
-        bias_o.randomize_for_nn(concat_size+1);
+        weights_xg.randomize_for_relu_nn();
+        weights_xi.randomize_for_relu_nn();
+        weights_xf.randomize_for_relu_nn();
+        weights_xo.randomize_for_relu_nn();
+        weights_hg.randomize_for_relu_nn();
+        weights_hi.randomize_for_relu_nn();
+        weights_hf.randomize_for_relu_nn();
+        weights_ho.randomize_for_relu_nn();
+        bias_g.randomize_for_relu_nn();
+        bias_i.randomize_for_relu_nn();
+        bias_f.randomize_for_relu_nn();
+        bias_o.randomize_for_relu_nn();
     }
 
     inline void only_wb_to_bin_file(std::ofstream &out) noexcept
@@ -152,7 +152,7 @@ public:
         lstm_states[time_step].state_f.add(bias_f);
         lstm_states[time_step].state_o.add(bias_o);
         //Apply activation function to each state
-        lstm_states[time_step].state_g.apply_tanh();
+        lstm_states[time_step].state_g.apply_rectifier();
         lstm_states[time_step].state_i.apply_sigmoid();
         lstm_states[time_step].state_f.apply_sigmoid();
         lstm_states[time_step].state_o.apply_sigmoid();
@@ -163,7 +163,7 @@ public:
 
         //The "memory state" s needs to have a element-wise tanh function applied to it for further calculations
         lstm_states[time_step].state_st.set(lstm_states[time_step].state_s);
-        lstm_states[time_step].state_st.apply_tanh();
+        // lstm_states[time_step].state_st.apply_tanh();
 
         //Calculate the output of the LSTM (tanh of output of mem-cell times output gate)
         lstm_states[time_step].state_h.equals_a_mul_b(lstm_states[time_step].state_st, lstm_states[time_step].state_o);
@@ -186,7 +186,7 @@ public:
         lstm_states[time_step].delta_o.mult_after_func01(lstm_states[time_step].state_o);
         //Get delta of the s-state
         lstm_states[time_step].delta_s.equals_a_mul_b(lstm_states[time_step].delta_h, lstm_states[time_step].state_o);
-        lstm_states[time_step].delta_s.mult_after_func02(lstm_states[time_step].state_st);
+        // lstm_states[time_step].delta_s.mult_after_func02(lstm_states[time_step].state_st);
         if(time_step!=total_time_steps-1)lstm_states[time_step].delta_s.add(lstm_states[time_step+1].delta_ls);
 
         //Get delta of the i-state
@@ -194,7 +194,7 @@ public:
         lstm_states[time_step].delta_i.mult_after_func01(lstm_states[time_step].state_i);
         //Get delta of the g-state
         lstm_states[time_step].delta_g.equals_a_mul_b(lstm_states[time_step].delta_s, lstm_states[time_step].state_i);
-        lstm_states[time_step].delta_g.mult_after_func02(lstm_states[time_step].state_g);
+        lstm_states[time_step].delta_g.mult_after_func04(lstm_states[time_step].state_g);
         //Get delta of the f-state and last s-state //f state does not exist in the first round anyways
         //Both deltas are not needed in the first round, so they are not calculated
         if(time_step!=0)
@@ -253,7 +253,7 @@ public:
 };
 
 template<unsigned long input_size, unsigned long mem_cell_size>
-class NAGLSTMBlock : public BaseLSTMBlock<input_size, mem_cell_size>
+class NAGRELULSTMBlock : public BaseRELULSTMBlock<input_size, mem_cell_size>
 {
 private:
     //LSTM momentum for weights
@@ -271,54 +271,38 @@ private:
     Matrix<1, mem_cell_size> moment_bias_f;
     Matrix<1, mem_cell_size> moment_bias_o;
 public:
-    using BaseLSTMBlock<input_size,mem_cell_size>::lstm_states;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::lstm_states;
 
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xg;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xi;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xf;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xo;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hg;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hi;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hf;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_ho;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_g;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_i;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_f;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_o;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xg;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xi;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xf;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xo;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hg;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hi;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hf;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_ho;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_g;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_i;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_f;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_o;
 
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xg_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xi_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xf_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xo_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hg_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hi_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hf_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_ho_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_g_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_i_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
-    NAGLSTMBlock(size_t time_steps=0) noexcept:BaseLSTMBlock<input_size,mem_cell_size>(time_steps)
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xg_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xi_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xf_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xo_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hg_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hi_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hf_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_ho_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_g_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_i_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
+    NAGRELULSTMBlock(size_t time_steps=0) noexcept:BaseRELULSTMBlock<input_size,mem_cell_size>(time_steps)
     , moment_weights_xg(0.0), moment_weights_xi(0.0), moment_weights_xf(0.0), moment_weights_xo(0.0)
     , moment_weights_hg(0.0), moment_weights_hi(0.0), moment_weights_hf(0.0), moment_weights_ho(0.0)
     , moment_bias_g(0.0), moment_bias_i(0.0), moment_bias_f(0.0), moment_bias_o(0.0)
     {
-    }
-
-    inline void reset_momentum() noexcept
-    {
-        moment_weights_xg.set(0.0);
-        moment_weights_xi.set(0.0);
-        moment_weights_xf.set(0.0);
-        moment_weights_xo.set(0.0);
-        moment_weights_hg.set(0.0);
-        moment_weights_hi.set(0.0);
-        moment_weights_hf.set(0.0);
-        moment_weights_ho.set(0.0);
-        moment_bias_g.set(0.0);
-        moment_bias_i.set(0.0);
-        moment_bias_f.set(0.0);
-        moment_bias_o.set(0.0);
     }
 
     inline void to_file(std::ofstream &out) noexcept
@@ -496,7 +480,7 @@ public:
 };
 
 template<unsigned long input_size, unsigned long mem_cell_size>
-class SpeedyLSTMBlock : public BaseLSTMBlock<input_size, mem_cell_size>
+class SpeedyRELULSTMBlock : public BaseRELULSTMBlock<input_size, mem_cell_size>
 {
 private:
     //LSTM momentum for weights
@@ -529,34 +513,34 @@ private:
     Matrix<1, mem_cell_size> ms_bias_f;
     Matrix<1, mem_cell_size> ms_bias_o;
 public:
-    using BaseLSTMBlock<input_size,mem_cell_size>::lstm_states;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::lstm_states;
 
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xg;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xi;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xf;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xo;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hg;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hi;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hf;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_ho;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_g;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_i;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_f;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_o;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xg;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xi;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xf;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xo;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hg;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hi;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hf;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_ho;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_g;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_i;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_f;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_o;
 
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xg_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xi_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xf_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xo_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hg_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hi_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hf_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_ho_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_g_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_i_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
-    SpeedyLSTMBlock(size_t time_steps=0) noexcept:BaseLSTMBlock<input_size,mem_cell_size>(time_steps)
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xg_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xi_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xf_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xo_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hg_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hi_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hf_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_ho_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_g_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_i_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
+    SpeedyRELULSTMBlock(size_t time_steps=0) noexcept:BaseRELULSTMBlock<input_size,mem_cell_size>(time_steps)
     , moment_weights_xg(0.0), moment_weights_xi(0.0), moment_weights_xf(0.0), moment_weights_xo(0.0)
     , moment_weights_hg(0.0), moment_weights_hi(0.0), moment_weights_hf(0.0), moment_weights_ho(0.0)
     , moment_bias_g(0.0), moment_bias_i(0.0), moment_bias_f(0.0), moment_bias_o(0.0)
@@ -820,7 +804,7 @@ public:
 
 
 template<unsigned long input_size, unsigned long mem_cell_size>
-class RMSPropLSTMBlock : public BaseLSTMBlock<input_size, mem_cell_size>
+class RMSPropRELULSTMBlock : public BaseRELULSTMBlock<input_size, mem_cell_size>
 {
 private:
     //LSTM ms for weights
@@ -838,34 +822,34 @@ private:
     Matrix<1, mem_cell_size> ms_bias_f;
     Matrix<1, mem_cell_size> ms_bias_o;
 public:
-    using BaseLSTMBlock<input_size,mem_cell_size>::lstm_states;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::lstm_states;
 
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xg;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xi;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xf;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xo;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hg;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hi;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hf;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_ho;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_g;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_i;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_f;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_o;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xg;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xi;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xf;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xo;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hg;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hi;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hf;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_ho;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_g;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_i;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_f;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_o;
 
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xg_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xi_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xf_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xo_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hg_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hi_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hf_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_ho_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_g_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_i_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
-    RMSPropLSTMBlock(size_t time_steps=0) noexcept:BaseLSTMBlock<input_size,mem_cell_size>(time_steps)
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xg_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xi_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xf_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xo_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hg_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hi_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hf_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_ho_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_g_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_i_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
+    RMSPropRELULSTMBlock(size_t time_steps=0) noexcept:BaseRELULSTMBlock<input_size,mem_cell_size>(time_steps)
     , ms_weights_xg(1.0), ms_weights_xi(1.0), ms_weights_xf(1.0), ms_weights_xo(1.0)
     , ms_weights_hg(1.0), ms_weights_hi(1.0), ms_weights_hf(1.0), ms_weights_ho(1.0)
     , ms_bias_g(1.0), ms_bias_i(1.0), ms_bias_f(1.0), ms_bias_o(1.0)
@@ -1045,7 +1029,7 @@ public:
 };
 
 template<unsigned long input_size, unsigned long mem_cell_size>
-class AdamLSTMBlock : public BaseLSTMBlock<input_size, mem_cell_size>
+class AdamRELULSTMBlock : public BaseRELULSTMBlock<input_size, mem_cell_size>
 {
 private:
     //LSTM ms for weights
@@ -1078,34 +1062,34 @@ private:
     Matrix<1, mem_cell_size> mns_bias_f;
     Matrix<1, mem_cell_size> mns_bias_o;
 public:
-    using BaseLSTMBlock<input_size,mem_cell_size>::lstm_states;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::lstm_states;
 
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xg;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xi;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xf;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xo;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hg;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hi;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hf;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_ho;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_g;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_i;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_f;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_o;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xg;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xi;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xf;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xo;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hg;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hi;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hf;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_ho;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_g;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_i;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_f;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_o;
 
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xg_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xi_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xf_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_xo_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hg_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hi_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_hf_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::weights_ho_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_g_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_i_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
-    using BaseLSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
-    AdamLSTMBlock(size_t time_steps=0) noexcept:BaseLSTMBlock<input_size,mem_cell_size>(time_steps)
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xg_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xi_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xf_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_xo_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hg_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hi_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_hf_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::weights_ho_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_g_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_i_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
+    using BaseRELULSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
+    AdamRELULSTMBlock(size_t time_steps=0) noexcept:BaseRELULSTMBlock<input_size,mem_cell_size>(time_steps)
     , ms_weights_xg(1.0), ms_weights_xi(1.0), ms_weights_xf(1.0), ms_weights_xo(1.0)
     , ms_weights_hg(1.0), ms_weights_hi(1.0), ms_weights_hf(1.0), ms_weights_ho(1.0)
     , ms_bias_g(1.0), ms_bias_i(1.0), ms_bias_f(1.0), ms_bias_o(1.0)

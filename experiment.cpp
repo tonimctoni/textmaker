@@ -1,9 +1,14 @@
 #include "perceptron_timeseries_class.hpp"
+#include "RELU_timeseries_class.hpp"
 #include "softmax_timeseries_class.hpp"
 #include "LSTM_class.hpp"
 #include <memory>
 // #include <fstream>
 using namespace std;
+//initialize RELU weights differently
+//a=sqrt(12/(in+out))
+//W~U(-a,a)
+//start both relu again (nag and adam)
 
 // 0.7943282347242815 --> *.1 every 10
 // 0.8912509381337456 --> *.1 every 20
@@ -401,27 +406,132 @@ int main()
     // }
 
 
-    string asoiaf_content;
-    read_file_to_string("../asoiaf/asoiaf.txt", asoiaf_content);
-    vector<size_t> sentence_starts;
-    sentence_starts.reserve(150000);
-    sentence_starts.push_back(0);
-    for(size_t i=0;i<asoiaf_content.size()-1;i++)
-        if(asoiaf_content[i]=='.' and asoiaf_content[i+1]!='.' and asoiaf_content[i-1]!='.')
-            sentence_starts.push_back(i+1);
-    sentence_starts.push_back(asoiaf_content.size());
+    // string asoiaf_content;
+    // read_file_to_string("../asoiaf/asoiaf.txt", asoiaf_content);
+    // vector<size_t> sentence_starts;
+    // sentence_starts.reserve(150000);
+    // sentence_starts.push_back(0);
+    // for(size_t i=0;i<asoiaf_content.size()-1;i++)
+    //     if(asoiaf_content[i]=='.' and asoiaf_content[i+1]!='.' and asoiaf_content[i-1]!='.')
+    //         sentence_starts.push_back(i+1);
+    // sentence_starts.push_back(asoiaf_content.size());
 
+    // std::random_device rd;
+    // std::mt19937 gen(rd());
+    // std::uniform_int_distribution<size_t> dst_start(0,sentence_starts.size()-2);
+
+    // size_t start=dst_start(gen);
+    // for(size_t i=sentence_starts[start];i<sentence_starts[start+1];i++)
+    //     cout << asoiaf_content[i];
+    // cout << endl;
+    // print(asoiaf_content.size());
+    // print(sentence_starts.size());
+
+    // unique_ptr<SGDRELUBlock<4,5>> block1(new SGDRELUBlock<4,5>(1));
+    // unique_ptr<SGDRELUBlock<5,2>> block2(new SGDRELUBlock<5,2>(2));
+
+    // vector<Matrix<1,4>> X{{{0,0,0,0},},{{1,0,1,0},},{{0,1,0,1},},{{1,1,1,1},},};
+    // vector<Matrix<1,2>> Y{{{0,0},},{{1,1},},{{1,1},},{{0,0},},};
+    // print("################################");
+    // for(size_t i=0;i<100000;i++)//10000000 -> 0m13.372s
+    // {
+    //     // print(i);
+    //     // block1->apply_momentum(.9);
+    //     // block2->apply_momentum(.9);
+    //     for(size_t j=0;j<4;j++)
+    //     {
+    //         block1->calc(X[j], 0);
+    //         block2->calc(block1->get_output(0), 0);
+
+    //         block2->set_first_delta(Y[j], 0);
+    //         block2->propagate_delta(block1->get_delta_output(0), 0);
+    //         block1->propagate_delta(0);
+
+    //         block1->accumulate_gradients(X[j],0);
+    //         block2->accumulate_gradients(block1->get_output(0),0);
+    //     }
+    //     // block1->update_weights_momentum(.1);
+    //     // block2->update_weights_momentum(.1);
+    //     // block1->update_weights_ms(.1, .9);
+    //     // block2->update_weights_ms(.1, .9);
+    //     block1->update_weights(.8);
+    //     block2->update_weights(.8);
+    // }
+
+    // for(size_t j=0;j<4;j++)
+    // {
+    //     block1->calc(X[j], 0);
+    //     block2->calc(block1->get_output(0), 0);
+
+    //     print(block2->get_output(0));
+    // }
+
+    static constexpr size_t input_size=4;
+    static constexpr size_t hidden_size=1;
+
+    unique_ptr<AdamRELUBlock<input_size,hidden_size>> block1(new AdamRELUBlock<input_size,hidden_size>(1));
+    unique_ptr<AdamSoftmaxBlock<hidden_size,input_size>> block2(new AdamSoftmaxBlock<hidden_size,input_size>(1));
+
+    Matrix<1,input_size> X(0.0);
+    size_t last_input_index=0;
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> dst_start(0,sentence_starts.size()-2);
+    std::uniform_int_distribution<size_t> dst(0,input_size-1);
 
-    size_t start=dst_start(gen);
-    for(size_t i=sentence_starts[start];i<sentence_starts[start+1];i++)
-        cout << asoiaf_content[i];
-    cout << endl;
-    print(asoiaf_content.size());
-    print(sentence_starts.size());
+    // double last_average_error=0.0;
+    for(size_t iteration=0;iteration<5000000;iteration++)
+    {
+        for(size_t batch=0;batch<1;batch++)
+        {
+            X[0][last_input_index]=0.0;
+            last_input_index=dst(gen);
+            X[0][last_input_index]=1.0;
 
+            block1->calc(X, 0);
+            block2->calc(block1->get_output(0), 0);
 
+            block2->set_first_delta_and_propagate_with_cross_enthropy(X, block1->get_delta_output(0), 0);
+            block1->propagate_delta(0);
+
+            block1->accumulate_gradients(X,0);
+            block2->accumulate_gradients(block1->get_output(0),0);
+        }
+        block1->update_weights_adam(.001, .999, .9);
+        block2->update_weights_adam(.001, .999, .9);
+
+        if(iteration%100000==0)
+        {
+            double error=0.0;
+            for(size_t new_input_index=0;new_input_index<input_size;new_input_index++)
+            {
+                X[0][last_input_index]=0.0;
+                last_input_index=new_input_index;
+                X[0][last_input_index]=1.0;
+
+                block1->calc(X, 0);
+                block2->calc(block1->get_output(0), 0);
+
+                for(size_t i=0;i<input_size;i++)
+                {
+                    double aux=block2->get_output(0)[0][i]-X[0][i];
+                    aux*=aux;
+                    error+=aux;
+                }
+            }
+            // error/=input_size;
+            print(error);
+        }
+    }
+    print("############");
+    for(size_t i=0;i<input_size;i++)
+    {
+        X[0][last_input_index]=0.0;
+        last_input_index=i;
+        X[0][last_input_index]=1.0;
+
+        block1->calc(X, 0);
+        // block2->calc(block1->get_output(0), 0);
+        print(block1->get_output(0));
+    }
     return 0;
 }
