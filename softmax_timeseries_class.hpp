@@ -27,13 +27,13 @@ public:
         bias.randomize_for_nn(input_size+1);
     }
 
-    inline void only_wb_to_bin_file(std::ofstream &out) const noexcept
+    inline void only_wb_to_bin_file(std::ofstream &out) const
     {
         weights.to_bin_file(out);
         bias.to_bin_file(out);
     }
 
-    inline void only_wb_from_bin_file(std::ifstream &in) noexcept
+    inline void only_wb_from_bin_file(std::ifstream &in)
     {
         weights.from_bin_file(in);
         bias.from_bin_file(in);
@@ -49,7 +49,7 @@ public:
         layer_states.reserve(time_steps);
     }
 
-    inline void calc(const Matrix<1,input_size> &X, size_t time_step) noexcept
+    inline void calc(const Matrix<1,input_size> &X, size_t time_step)
     {
         assert(time_step<layer_states.size());
 
@@ -58,7 +58,7 @@ public:
         layer_states[time_step].output.apply_softmax();
     }
 
-    inline void set_first_delta_and_propagate_with_cross_enthropy(const Matrix<1,output_size> &Y, Matrix<1,input_size> &X_delta, size_t time_step) noexcept
+    inline void set_first_delta_and_propagate_with_cross_enthropy(const Matrix<1,output_size> &Y, Matrix<1,input_size> &X_delta, size_t time_step)
     {
         assert(time_step<layer_states.size());
         //Get outputs delta
@@ -66,21 +66,21 @@ public:
         X_delta.equals_a_dot_bt(layer_states[time_step].delta_output, weights);
     }
 
-    inline void set_first_delta(const Matrix<1,output_size> &Y, size_t time_step) noexcept
+    inline void set_first_delta(const Matrix<1,output_size> &Y, size_t time_step)
     {
         assert(time_step<layer_states.size());
         //Get outputs delta
         layer_states[time_step].delta_output.equals_a_sub_b(Y,layer_states[time_step].output);
     }
 
-    inline void propagate_delta(size_t time_step) noexcept
+    inline void propagate_delta(size_t time_step)
     {
         assert(time_step<layer_states.size());
         //Propagate delta
         layer_states[time_step].delta_output.mult_after_func03(layer_states[time_step].output);
     }
 
-    inline void propagate_delta(Matrix<1,input_size> &X_delta, size_t time_step) noexcept
+    inline void propagate_delta(Matrix<1,input_size> &X_delta, size_t time_step)
     {
         propagate_delta(time_step);
         //Propagate delta to next building block
@@ -127,7 +127,7 @@ public:
         moment_bias.set(0.0);
     }
 
-    inline void to_file(std::ofstream &out) const noexcept
+    inline void to_file(std::ofstream &out) const
     {
         weights.to_file(out);
         bias.to_file(out);
@@ -135,7 +135,7 @@ public:
         moment_bias.to_file(out);
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         weights.from_file(in);
         bias.from_file(in);
@@ -143,7 +143,7 @@ public:
         moment_bias.from_file(in);
     }
 
-    inline void to_bin_file(std::ofstream &out) const noexcept
+    inline void to_bin_file(std::ofstream &out) const
     {
         weights.to_bin_file(out);
         bias.to_bin_file(out);
@@ -151,7 +151,7 @@ public:
         moment_bias.to_bin_file(out);
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         weights.from_bin_file(in);
         bias.from_bin_file(in);
@@ -195,7 +195,7 @@ public:
     {
     }
 
-    inline void to_file(std::ofstream &out) const noexcept
+    inline void to_file(std::ofstream &out) const
     {
         weights.to_file(out);
         bias.to_file(out);
@@ -205,7 +205,7 @@ public:
         ms_bias.to_file(out);
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         weights.from_file(in);
         bias.from_file(in);
@@ -215,7 +215,7 @@ public:
         ms_bias.from_file(in);
     }
 
-    inline void to_bin_file(std::ofstream &out) const noexcept
+    inline void to_bin_file(std::ofstream &out) const
     {
         weights.to_bin_file(out);
         bias.to_bin_file(out);
@@ -225,7 +225,7 @@ public:
         ms_bias.to_bin_file(out);
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         weights.from_bin_file(in);
         bias.from_bin_file(in);
@@ -273,7 +273,7 @@ public:
     {
     }
 
-    inline void to_file(std::ofstream &out) const noexcept
+    inline void to_file(std::ofstream &out) const
     {
         weights.to_file(out);
         bias.to_file(out);
@@ -281,7 +281,7 @@ public:
         ms_bias.to_file(out);
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         weights.from_file(in);
         bias.from_file(in);
@@ -289,7 +289,7 @@ public:
         ms_bias.from_file(in);
     }
 
-    inline void to_bin_file(std::ofstream &out) const noexcept
+    inline void to_bin_file(std::ofstream &out) const
     {
         weights.to_bin_file(out);
         bias.to_bin_file(out);
@@ -297,7 +297,7 @@ public:
         ms_bias.to_bin_file(out);
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         weights.from_bin_file(in);
         bias.from_bin_file(in);
@@ -333,11 +333,11 @@ public:
     using BaseSoftmaxBlock<input_size, output_size>::bias;
     using BaseSoftmaxBlock<input_size, output_size>::weight_gradient_accumulator;
     using BaseSoftmaxBlock<input_size, output_size>::bias_gradient_accumulator;
-    AdamSoftmaxBlock(size_t time_steps=0) noexcept:BaseSoftmaxBlock<input_size, output_size>(time_steps),ms_weights(1.0), ms_bias(1.0),mns_weights(1.0), mns_bias(1.0)
+    AdamSoftmaxBlock(size_t time_steps=0) noexcept:BaseSoftmaxBlock<input_size, output_size>(time_steps),ms_weights(0.0), ms_bias(0.0),mns_weights(0.0), mns_bias(0.0)
     {
     }
 
-    inline void to_file(std::ofstream &out) const noexcept
+    inline void to_file(std::ofstream &out) const
     {
         weights.to_file(out);
         bias.to_file(out);
@@ -347,7 +347,7 @@ public:
         mns_bias.to_file(out);
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         weights.from_file(in);
         bias.from_file(in);
@@ -357,7 +357,7 @@ public:
         mns_bias.from_file(in);
     }
 
-    inline void to_bin_file(std::ofstream &out) const noexcept
+    inline void to_bin_file(std::ofstream &out) const
     {
         weights.to_bin_file(out);
         bias.to_bin_file(out);
@@ -367,7 +367,7 @@ public:
         mns_bias.to_bin_file(out);
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         weights.from_bin_file(in);
         bias.from_bin_file(in);

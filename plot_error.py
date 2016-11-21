@@ -1,5 +1,5 @@
 from os import listdir
-from numpy import array, multiply, divide#, add, subtract, abs
+from numpy import array, multiply, divide, arange#, add, subtract, abs
 import matplotlib.pyplot as plt
 
 def myfun(directory):
@@ -29,6 +29,7 @@ def myfun(directory):
             res.append((itera, error))
 
     print len(res)
+    if len(res)==0: return None, None
     res.sort()
     X, Y = zip(*res)
     return X,Y
@@ -107,12 +108,33 @@ X=multiply(X,5)
 Y=multiply(Y,5)
 plt.plot(X,Y, "r", X,Y, "ro")
 
+# Text RMSProp
+X,Y=myfun("outs/tm02/trg")
+Y=divide(Y, 46)
+X=multiply(X,5)
+Y=multiply(Y,5)
+plt.plot(X,Y, "r", X,Y, "ro")
+
 # Text Adam
 X,Y=myfun("outs/tm02/ta")
 Y=divide(Y, 46)
 X=multiply(X,5)
 Y=multiply(Y,5)
 plt.plot(X,Y, "m", X,Y, "mo")
+
+# Text Adam
+# X,Y=myfun("outs/tm02/tag")
+# Y=divide(Y, 46)
+# X=multiply(X,5)
+# Y=multiply(Y,5)
+# plt.plot(X,Y, "m", X,Y, "ms")
+
+# Text Adam
+X,Y=myfun("outs/tm02/tagg")
+Y=divide(Y, 46)
+X=multiply(X,5)
+Y=multiply(Y,5)
+plt.plot(X,Y, "m", X,Y, "m^")
 
 # # Test 18b (nag)
 # X,Y=myfun("outs/tm02/ts18b")
@@ -132,11 +154,11 @@ Y=divide(Y, 46)
 plt.plot(X[1:],Y[1:], "g--", X[1:],Y[1:], "g*")
 
 # Text RMSProp with larger neural network
-X,Y=myfun("outs/tm02/trl")
-Y=divide(Y, 46)
-X=multiply(X,5)
-Y=multiply(Y,5)
-plt.plot(X[1:],Y[1:], "r--", X[1:],Y[1:], "r*")
+# X,Y=myfun("outs/tm02/trl")
+# Y=divide(Y, 46)
+# X=multiply(X,5)
+# Y=multiply(Y,5)
+# plt.plot(X,Y, "r--", X,Y, "r*")
 
 # Text NAG higher learning rate
 # X,Y=myfun("outs/tm02/tns")

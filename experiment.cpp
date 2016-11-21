@@ -5,10 +5,8 @@
 #include <memory>
 // #include <fstream>
 using namespace std;
-//initialize RELU weights differently
-//a=sqrt(12/(in+out))
-//W~U(-a,a)
-//start both relu again (nag and adam)
+//try out adam with learning_rate schedule
+//read adam paper
 
 // 0.7943282347242815 --> *.1 every 10
 // 0.8912509381337456 --> *.1 every 20

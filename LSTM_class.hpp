@@ -85,7 +85,7 @@ public:
         bias_o.randomize_for_nn(concat_size+1);
     }
 
-    inline void only_wb_to_bin_file(std::ofstream &out) noexcept
+    inline void only_wb_to_bin_file(std::ofstream &out)
     {
         weights_xg.to_bin_file(out);
         weights_xi.to_bin_file(out);
@@ -101,7 +101,7 @@ public:
         bias_o.to_bin_file(out);
     }
 
-    inline void only_wb_from_bin_file(std::ifstream &in) noexcept
+    inline void only_wb_from_bin_file(std::ifstream &in)
     {
         weights_xg.from_bin_file(in);
         weights_xi.from_bin_file(in);
@@ -127,7 +127,7 @@ public:
         lstm_states.reserve(time_steps);
     }
 
-    inline void calc(const Matrix<1,input_size> &X, size_t time_step) noexcept
+    inline void calc(const Matrix<1,input_size> &X, size_t time_step)
     {
         assert(time_step<lstm_states.size());
         //Calculate states g, i (input gate), f (forget gate), and o (output gate). steps are split for readability
@@ -169,14 +169,14 @@ public:
         lstm_states[time_step].state_h.equals_a_mul_b(lstm_states[time_step].state_st, lstm_states[time_step].state_o);
     }
 
-    inline void set_first_delta(const Matrix<1,mem_cell_size> &Y, size_t time_step) noexcept
+    inline void set_first_delta(const Matrix<1,mem_cell_size> &Y, size_t time_step)
     {
         assert(time_step<lstm_states.size());
         //Get outputs delta
         lstm_states[time_step].delta_h.equals_a_sub_b(Y,lstm_states[time_step].state_h);
     }
 
-    inline void propagate_delta(size_t time_step, size_t total_time_steps) noexcept
+    inline void propagate_delta(size_t time_step, size_t total_time_steps)
     {
         assert(time_step<lstm_states.size() && time_step<total_time_steps);
         //Add deltas from future timesteps to the h-state delta
@@ -210,7 +210,7 @@ public:
         }
     }
 
-    inline void propagate_delta(Matrix<1,input_size> &X_delta, size_t time_step, size_t total_time_steps) noexcept
+    inline void propagate_delta(Matrix<1,input_size> &X_delta, size_t time_step, size_t total_time_steps)
     {
         propagate_delta(time_step, total_time_steps);
 
@@ -220,7 +220,7 @@ public:
         X_delta.add_a_dot_bt(lstm_states[time_step].delta_g, weights_xg);
     }
 
-    inline void accumulate_gradients(const Matrix<1,input_size> &X, size_t time_step) noexcept
+    inline void accumulate_gradients(const Matrix<1,input_size> &X, size_t time_step)
     {
         assert(time_step<lstm_states.size());
 
@@ -321,7 +321,7 @@ public:
         moment_bias_o.set(0.0);
     }
 
-    inline void to_file(std::ofstream &out) noexcept
+    inline void to_file(std::ofstream &out)
     {
         weights_xg.to_file(out);
         weights_xi.to_file(out);
@@ -350,7 +350,7 @@ public:
         moment_bias_o.to_file(out);
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         weights_xg.from_file(in);
         weights_xi.from_file(in);
@@ -379,7 +379,7 @@ public:
         moment_bias_o.from_file(in);
     }
 
-    inline void to_bin_file(std::ofstream &out) noexcept
+    inline void to_bin_file(std::ofstream &out)
     {
         weights_xg.to_bin_file(out);
         weights_xi.to_bin_file(out);
@@ -408,7 +408,7 @@ public:
         moment_bias_o.to_bin_file(out);
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         weights_xg.from_bin_file(in);
         weights_xi.from_bin_file(in);
@@ -566,7 +566,7 @@ public:
     {
     }
 
-    inline void to_file(std::ofstream &out) noexcept
+    inline void to_file(std::ofstream &out)
     {
         weights_xg.to_file(out);
         weights_xi.to_file(out);
@@ -608,7 +608,7 @@ public:
         ms_bias_o.to_file(out);
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         weights_xg.from_file(in);
         weights_xi.from_file(in);
@@ -650,7 +650,7 @@ public:
         ms_bias_o.from_file(in);
     }
 
-    inline void to_bin_file(std::ofstream &out) noexcept
+    inline void to_bin_file(std::ofstream &out)
     {
         weights_xg.to_bin_file(out);
         weights_xi.to_bin_file(out);
@@ -692,7 +692,7 @@ public:
         ms_bias_o.to_bin_file(out);
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         weights_xg.from_bin_file(in);
         weights_xi.from_bin_file(in);
@@ -872,7 +872,7 @@ public:
     {
     }
 
-    inline void to_file(std::ofstream &out) noexcept
+    inline void to_file(std::ofstream &out)
     {
         weights_xg.to_file(out);
         weights_xi.to_file(out);
@@ -901,7 +901,7 @@ public:
         ms_bias_o.to_file(out);
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         weights_xg.from_file(in);
         weights_xi.from_file(in);
@@ -930,7 +930,7 @@ public:
         ms_bias_o.from_file(in);
     }
 
-    inline void to_bin_file(std::ofstream &out) noexcept
+    inline void to_bin_file(std::ofstream &out)
     {
         weights_xg.to_bin_file(out);
         weights_xi.to_bin_file(out);
@@ -959,7 +959,7 @@ public:
         ms_bias_o.to_bin_file(out);
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         weights_xg.from_bin_file(in);
         weights_xi.from_bin_file(in);
@@ -1106,16 +1106,16 @@ public:
     using BaseLSTMBlock<input_size,mem_cell_size>::bias_f_gradient_acc;
     using BaseLSTMBlock<input_size,mem_cell_size>::bias_o_gradient_acc;
     AdamLSTMBlock(size_t time_steps=0) noexcept:BaseLSTMBlock<input_size,mem_cell_size>(time_steps)
-    , ms_weights_xg(1.0), ms_weights_xi(1.0), ms_weights_xf(1.0), ms_weights_xo(1.0)
-    , ms_weights_hg(1.0), ms_weights_hi(1.0), ms_weights_hf(1.0), ms_weights_ho(1.0)
-    , ms_bias_g(1.0), ms_bias_i(1.0), ms_bias_f(1.0), ms_bias_o(1.0)
-    , mns_weights_xg(1.0), mns_weights_xi(1.0), mns_weights_xf(1.0), mns_weights_xo(1.0)
-    , mns_weights_hg(1.0), mns_weights_hi(1.0), mns_weights_hf(1.0), mns_weights_ho(1.0)
-    , mns_bias_g(1.0), mns_bias_i(1.0), mns_bias_f(1.0), mns_bias_o(1.0)
+    , ms_weights_xg(0.0), ms_weights_xi(0.0), ms_weights_xf(0.0), ms_weights_xo(0.0)
+    , ms_weights_hg(0.0), ms_weights_hi(0.0), ms_weights_hf(0.0), ms_weights_ho(0.0)
+    , ms_bias_g(0.0), ms_bias_i(0.0), ms_bias_f(0.0), ms_bias_o(0.0)
+    , mns_weights_xg(0.0), mns_weights_xi(0.0), mns_weights_xf(0.0), mns_weights_xo(0.0)
+    , mns_weights_hg(0.0), mns_weights_hi(0.0), mns_weights_hf(0.0), mns_weights_ho(0.0)
+    , mns_bias_g(0.0), mns_bias_i(0.0), mns_bias_f(0.0), mns_bias_o(0.0)
     {
     }
 
-    inline void to_file(std::ofstream &out) noexcept
+    inline void to_file(std::ofstream &out)
     {
         weights_xg.to_file(out);
         weights_xi.to_file(out);
@@ -1157,7 +1157,7 @@ public:
         mns_bias_o.to_file(out);
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         weights_xg.from_file(in);
         weights_xi.from_file(in);
@@ -1199,7 +1199,7 @@ public:
         mns_bias_o.from_file(in);
     }
 
-    inline void to_bin_file(std::ofstream &out) noexcept
+    inline void to_bin_file(std::ofstream &out)
     {
         weights_xg.to_bin_file(out);
         weights_xi.to_bin_file(out);
@@ -1241,7 +1241,7 @@ public:
         mns_bias_o.to_bin_file(out);
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         weights_xg.from_bin_file(in);
         weights_xi.from_bin_file(in);

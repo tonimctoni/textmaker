@@ -16,7 +16,7 @@ public:
     /// ################################################################################################
     Matrix()=default;
 
-    Matrix(std::initializer_list<std::initializer_list<double>> init) noexcept
+    Matrix(std::initializer_list<std::initializer_list<double>> init)
     {
         assert(init.size()==M);
 
@@ -786,7 +786,7 @@ public:
     }
 
     template<unsigned long A>
-    inline void set_from_part(const Matrix<1, A> &a, size_t index_from) noexcept
+    inline void set_from_part(const Matrix<1, A> &a, size_t index_from)
     {
         assert(N<=A-index_from);
 
@@ -799,7 +799,7 @@ public:
     }
 
     template<unsigned long A>
-    inline void add_from_part(const Matrix<1, A> &a, size_t index_from) noexcept
+    inline void add_from_part(const Matrix<1, A> &a, size_t index_from)
     {
         assert(N<=A-index_from);
 
@@ -841,7 +841,7 @@ public:
 
     /// File IO stuff
     /// ################################################################################################
-    inline void to_file(std::ofstream &out) const noexcept
+    inline void to_file(std::ofstream &out) const
     {
         assert(out.good());
         out << M << "\t" << N << std::endl;
@@ -851,7 +851,7 @@ public:
         assert(not out.fail());
     }
 
-    inline void from_file(std::ifstream &in) noexcept
+    inline void from_file(std::ifstream &in)
     {
         assert(in.good());
         unsigned long m, n;
@@ -863,7 +863,7 @@ public:
         assert(not in.fail());
     }
 
-    inline void to_bin_file(std::ofstream &out) const noexcept
+    inline void to_bin_file(std::ofstream &out) const
     {
         assert(out.good());
         unsigned long MM=M, NN=N;
@@ -875,7 +875,7 @@ public:
         assert(not out.fail());
     }
 
-    inline void from_bin_file(std::ifstream &in) noexcept
+    inline void from_bin_file(std::ifstream &in)
     {
         assert(in.good());
         unsigned long m, n;
@@ -907,7 +907,8 @@ inline void update_weight_with_adam(Matrix<M,N> &weights, const Matrix<M,N> &ms,
         {
             double v=ms[i][j]/(1-decay1);
             double m=mns[i][j]/(1-decay2);
-            weights[i][j]+=(learning_rate/sqrt(v+1e-8))*m;
+            // weights[i][j]+=(learning_rate/sqrt(v+1e-8))*m;
+            weights[i][j]+=(learning_rate*m)/sqrt(v+1e-8);
         }
 }
 
@@ -957,7 +958,7 @@ public:
     {
     }
 
-    inline void set(size_t index) noexcept
+    inline void set(size_t index)
     {
         assert(index<mat_size);
         X[0][hot_index]=0.0;
