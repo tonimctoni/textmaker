@@ -23,8 +23,9 @@ def myfun(directory):
                     error=float(line[2])
                     continue
                 if itera and error: break
-        if not itera and not error: raise Exception("Failed to find data in file")
-        if (itera and not error) or (error and not itera): raise Exception("Only one, not both")
+        if not itera and not error: print "%s/%s"%(directory,filename)
+        # if not itera and not error: raise Exception("Failed to find data in file")
+        # if (itera and not error) or (error and not itera): raise Exception("Only one, not both")
         if itera and error:
             res.append((itera, error))
 
@@ -109,18 +110,18 @@ Y=multiply(Y,5)
 plt.plot(X,Y, "r", X,Y, "ro")
 
 # Text RMSProp
-X,Y=myfun("outs/tm02/trg")
-Y=divide(Y, 46)
-X=multiply(X,5)
-Y=multiply(Y,5)
-plt.plot(X,Y, "r", X,Y, "ro")
+# X,Y=myfun("outs/tm02/trg")
+# Y=divide(Y, 46)
+# X=multiply(X,5)
+# Y=multiply(Y,5)
+# plt.plot(X,Y, "r", X,Y, "ro")
 
 # Text Adam
-X,Y=myfun("outs/tm02/ta")
-Y=divide(Y, 46)
-X=multiply(X,5)
-Y=multiply(Y,5)
-plt.plot(X,Y, "m", X,Y, "mo")
+# X,Y=myfun("outs/tm02/ta")
+# Y=divide(Y, 46)
+# X=multiply(X,5)
+# Y=multiply(Y,5)
+# plt.plot(X,Y, "m", X,Y, "mo")
 
 # Text Adam
 # X,Y=myfun("outs/tm02/tag")
@@ -130,11 +131,11 @@ plt.plot(X,Y, "m", X,Y, "mo")
 # plt.plot(X,Y, "m", X,Y, "ms")
 
 # Text Adam
-X,Y=myfun("outs/tm02/tagg")
-Y=divide(Y, 46)
-X=multiply(X,5)
-Y=multiply(Y,5)
-plt.plot(X,Y, "m", X,Y, "m^")
+# X,Y=myfun("outs/tm02/tagg")
+# Y=divide(Y, 46)
+# X=multiply(X,5)
+# Y=multiply(Y,5)
+# plt.plot(X,Y, "m", X,Y, "m^")
 
 # # Test 18b (nag)
 # X,Y=myfun("outs/tm02/ts18b")

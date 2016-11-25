@@ -3,6 +3,7 @@
 #include "softmax_timeseries_class.hpp"
 #include "LSTM_class.hpp"
 #include <memory>
+#include <chrono>
 // #include <fstream>
 using namespace std;
 //try out adam with learning_rate schedule
@@ -464,72 +465,81 @@ int main()
     //     print(block2->get_output(0));
     // }
 
-    static constexpr size_t input_size=4;
-    static constexpr size_t hidden_size=1;
+    // static constexpr size_t input_size=4;
+    // static constexpr size_t hidden_size=1;
 
-    unique_ptr<AdamRELUBlock<input_size,hidden_size>> block1(new AdamRELUBlock<input_size,hidden_size>(1));
-    unique_ptr<AdamSoftmaxBlock<hidden_size,input_size>> block2(new AdamSoftmaxBlock<hidden_size,input_size>(1));
+    // unique_ptr<AdamRELUBlock<input_size,hidden_size>> block1(new AdamRELUBlock<input_size,hidden_size>(1));
+    // unique_ptr<AdamSoftmaxBlock<hidden_size,input_size>> block2(new AdamSoftmaxBlock<hidden_size,input_size>(1));
 
-    Matrix<1,input_size> X(0.0);
-    size_t last_input_index=0;
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> dst(0,input_size-1);
+    // Matrix<1,input_size> X(0.0);
+    // size_t last_input_index=0;
+    // std::random_device rd;
+    // std::mt19937 gen(rd());
+    // std::uniform_int_distribution<size_t> dst(0,input_size-1);
 
-    // double last_average_error=0.0;
-    for(size_t iteration=0;iteration<5000000;iteration++)
-    {
-        for(size_t batch=0;batch<1;batch++)
-        {
-            X[0][last_input_index]=0.0;
-            last_input_index=dst(gen);
-            X[0][last_input_index]=1.0;
+    // // double last_average_error=0.0;
+    // for(size_t iteration=0;iteration<5000000;iteration++)
+    // {
+    //     for(size_t batch=0;batch<1;batch++)
+    //     {
+    //         X[0][last_input_index]=0.0;
+    //         last_input_index=dst(gen);
+    //         X[0][last_input_index]=1.0;
 
-            block1->calc(X, 0);
-            block2->calc(block1->get_output(0), 0);
+    //         block1->calc(X, 0);
+    //         block2->calc(block1->get_output(0), 0);
 
-            block2->set_first_delta_and_propagate_with_cross_enthropy(X, block1->get_delta_output(0), 0);
-            block1->propagate_delta(0);
+    //         block2->set_first_delta_and_propagate_with_cross_enthropy(X, block1->get_delta_output(0), 0);
+    //         block1->propagate_delta(0);
 
-            block1->accumulate_gradients(X,0);
-            block2->accumulate_gradients(block1->get_output(0),0);
-        }
-        block1->update_weights_adam(.001, .999, .9);
-        block2->update_weights_adam(.001, .999, .9);
+    //         block1->accumulate_gradients(X,0);
+    //         block2->accumulate_gradients(block1->get_output(0),0);
+    //     }
+    //     block1->update_weights_adam(.001, .999, .9);
+    //     block2->update_weights_adam(.001, .999, .9);
 
-        if(iteration%100000==0)
-        {
-            double error=0.0;
-            for(size_t new_input_index=0;new_input_index<input_size;new_input_index++)
-            {
-                X[0][last_input_index]=0.0;
-                last_input_index=new_input_index;
-                X[0][last_input_index]=1.0;
+    //     if(iteration%100000==0)
+    //     {
+    //         double error=0.0;
+    //         for(size_t new_input_index=0;new_input_index<input_size;new_input_index++)
+    //         {
+    //             X[0][last_input_index]=0.0;
+    //             last_input_index=new_input_index;
+    //             X[0][last_input_index]=1.0;
 
-                block1->calc(X, 0);
-                block2->calc(block1->get_output(0), 0);
+    //             block1->calc(X, 0);
+    //             block2->calc(block1->get_output(0), 0);
 
-                for(size_t i=0;i<input_size;i++)
-                {
-                    double aux=block2->get_output(0)[0][i]-X[0][i];
-                    aux*=aux;
-                    error+=aux;
-                }
-            }
-            // error/=input_size;
-            print(error);
-        }
-    }
-    print("############");
-    for(size_t i=0;i<input_size;i++)
-    {
-        X[0][last_input_index]=0.0;
-        last_input_index=i;
-        X[0][last_input_index]=1.0;
+    //             for(size_t i=0;i<input_size;i++)
+    //             {
+    //                 double aux=block2->get_output(0)[0][i]-X[0][i];
+    //                 aux*=aux;
+    //                 error+=aux;
+    //             }
+    //         }
+    //         // error/=input_size;
+    //         print(error);
+    //     }
+    // }
+    // print("############");
+    // for(size_t i=0;i<input_size;i++)
+    // {
+    //     X[0][last_input_index]=0.0;
+    //     last_input_index=i;
+    //     X[0][last_input_index]=1.0;
 
-        block1->calc(X, 0);
-        // block2->calc(block1->get_output(0), 0);
-        print(block1->get_output(0));
-    }
+    //     block1->calc(X, 0);
+    //     // block2->calc(block1->get_output(0), 0);
+    //     print(block1->get_output(0));
+    // }
+    auto first_time=chrono::steady_clock::now()-chrono::seconds{43510};
+    auto elapsed_time=chrono::steady_clock::now()-first_time;
+    string elapsed_time_string(256, '\x00');
+    auto elapsed_time_string_size=sprintf(&elapsed_time_string[0], "%02i:%02i:%02li",
+        (chrono::duration_cast<chrono::hours>(elapsed_time)).count(),
+        (chrono::duration_cast<chrono::minutes>(elapsed_time)).count()%60,
+        (chrono::duration_cast<chrono::seconds>(elapsed_time)).count()%60);
+    elapsed_time_string.resize(elapsed_time_string_size);
+    print(elapsed_time_string);
     return 0;
 }
