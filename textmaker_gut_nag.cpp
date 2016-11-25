@@ -274,12 +274,12 @@ int main()
                 out << "Current iteration: " << iteration << endl;
                 auto elapsed_time=chrono::steady_clock::now()-first_time;
                 string elapsed_time_string(256, '\x00');
-                auto elapsed_time_string_size=sprintf(&elapsed_time_string[0], "%02i:%02i:%02li",
+                auto elapsed_time_string_size=sprintf(&elapsed_time_string[0], "%02li:%02li:%02li",
                     (chrono::duration_cast<chrono::hours>(elapsed_time)).count(),
                     (chrono::duration_cast<chrono::minutes>(elapsed_time)).count()%60,
                     (chrono::duration_cast<chrono::seconds>(elapsed_time)).count()%60);
                 elapsed_time_string.resize(elapsed_time_string_size);
-                out << "Time elapsed since program started: " << elapsed_time << endl;
+                out << "Time elapsed since program started: " << elapsed_time_string << endl;
                 out << "Optimizer: " << "nag" << endl;
                 out << "Used memory cells: " << first_mem_cell_size << ", " << second_mem_cell_size << ", " << third_mem_cell_size << endl;
                 out << "Batch size: " << batch_size << endl;
