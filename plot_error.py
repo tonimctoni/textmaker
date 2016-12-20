@@ -99,114 +99,56 @@ def myfun(directory):
 
 # Text NAG
 X,Y=myfun("outs/tm02/tn")
-Y=divide(Y, 46)
+# Y=divide(Y, 46)
 plt.plot(X,Y, "g", X,Y, "go")
 
 # Text RMSProp
 X,Y=myfun("outs/tm02/tr")
-Y=divide(Y, 46)
+# Y=divide(Y, 46)
 X=multiply(X,5)
 Y=multiply(Y,5)
 plt.plot(X,Y, "r", X,Y, "ro")
 
-# Text RMSProp
-# X,Y=myfun("outs/tm02/trg")
-# Y=divide(Y, 46)
-# X=multiply(X,5)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "r", X,Y, "ro")
-
-# Text Adam
-# X,Y=myfun("outs/tm02/ta")
-# Y=divide(Y, 46)
-# X=multiply(X,5)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "m", X,Y, "mo")
-
-# Text Adam
-# X,Y=myfun("outs/tm02/tag")
-# Y=divide(Y, 46)
-# X=multiply(X,5)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "m", X,Y, "ms")
-
-# Text Adam
-# X,Y=myfun("outs/tm02/tagg")
-# Y=divide(Y, 46)
-# X=multiply(X,5)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "m", X,Y, "m^")
-
-# # Test 18b (nag)
-# X,Y=myfun("outs/tm02/ts18b")
-# Y=divide(Y, 46)
-# plt.plot(X,Y, "c", X,Y, "cs")
-
-# # Test 18c (adam)
-# X,Y=myfun("outs/tm02/ts18c")
-# Y=divide(Y, 46)
-# X=multiply(X,5)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "c", X,Y, "c^")
-
-# Text NAG with larger neural network
-X,Y=myfun("outs/tm02/tnl")
-Y=divide(Y, 46)
-plt.plot(X[1:],Y[1:], "g--", X[1:],Y[1:], "g*")
-
-# Text RMSProp with larger neural network
-# X,Y=myfun("outs/tm02/trl")
-# Y=divide(Y, 46)
-# X=multiply(X,5)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "r--", X,Y, "r*")
-
-# Text NAG higher learning rate
-# X,Y=myfun("outs/tm02/tns")
-# Y=divide(Y, 46)
+# # Text NAG
+# X,Y=myfun("outs/tm02/gn")
+# # Y=divide(Y, 94)
 # plt.plot(X,Y, "g", X,Y, "gs")
 
-# Text RMSProp higher learning rate
-# X,Y=myfun("outs/tm02/trs")
-# Y=divide(Y, 46)
+# # Text RMSProp
+# X,Y=myfun("outs/tm02/gr")
+# # Y=divide(Y, 94)
 # X=multiply(X,5)
 # Y=multiply(Y,5)
 # plt.plot(X,Y, "r", X,Y, "rs")
 
-# Text RMSProp more data
-# X,Y=myfun("outs/tm02/trm")
+# Text NAG with larger neural network
+X,Y=myfun("outs/tm02/tnl")
 # Y=divide(Y, 46)
-# X=multiply(X,5*2)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "r", X,Y, "r^")
+plt.plot(X[1:],Y[1:], "g--", X[1:],Y[1:], "g*")
+
+# Text NAG with cut neural network
+X,Y=myfun("outs/tm02/tnc")
+# Y=divide(Y, 46)
+plt.plot(X,Y, "g--", X,Y, "g^")
+
+# Text RMSProp with cut neural network
+X,Y=myfun("outs/tm02/trc")
+# Y=divide(Y, 46)
+X=multiply(X,5)
+Y=multiply(Y,5)
+plt.plot(X,Y, "r--", X,Y, "r^")
+
+# Text NAG with cut neural network
+# X,Y=myfun("outs/tm02/tnlc")
+# # Y=divide(Y, 46)
+# plt.plot(X,Y, "g--", X,Y, "g^")
 
 # CSS RMSProp
 X,Y=myfun("outs/tm02/cr")
-Y=divide(Y, 72)
+# Y=divide(Y, 72)
 X=multiply(X,5*2)
 Y=multiply(Y,5)
 plt.plot(X,Y, "b", X,Y, "bo")
-
-# CSS RMSProp higher learning rate
-# X,Y=myfun("outs/tm02/crs")
-# Y=divide(Y, 72)
-# X=multiply(X,5*2)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "b", X,Y, "bs")
-
-# CSS RMSProp more data
-# X,Y=myfun("outs/tm02/crm")
-# Y=divide(Y, 72)
-# X=multiply(X,5*2*2)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "b", X,Y, "b^")
-
-# CSS RMSProp larger batch size
-# X,Y=myfun("outs/tm02/crb")
-# Y=divide(Y, 72)
-# X=multiply(X,5*2*2)
-# Y=multiply(Y,5*2)
-# plt.plot(X,Y, "b", X,Y, "bD")
 
 plt.grid(True)
 # plt.savefig("a.png")#, dpi=80

@@ -8,6 +8,7 @@
 using namespace std;
 //try out adam with learning_rate schedule
 //read adam paper
+//add timestamp to error message
 
 // 0.7943282347242815 --> *.1 every 10
 // 0.8912509381337456 --> *.1 every 20
@@ -532,14 +533,15 @@ int main()
     //     // block2->calc(block1->get_output(0), 0);
     //     print(block1->get_output(0));
     // }
-    auto first_time=chrono::steady_clock::now()-chrono::seconds{43510};
-    auto elapsed_time=chrono::steady_clock::now()-first_time;
-    string elapsed_time_string(256, '\x00');
-    auto elapsed_time_string_size=sprintf(&elapsed_time_string[0], "%02i:%02i:%02li",
-        (chrono::duration_cast<chrono::hours>(elapsed_time)).count(),
-        (chrono::duration_cast<chrono::minutes>(elapsed_time)).count()%60,
-        (chrono::duration_cast<chrono::seconds>(elapsed_time)).count()%60);
-    elapsed_time_string.resize(elapsed_time_string_size);
-    print(elapsed_time_string);
+    // auto first_time=chrono::steady_clock::now()-chrono::seconds{43510};
+    // auto elapsed_time=chrono::steady_clock::now()-first_time;
+    // string elapsed_time_string(256, '\x00');
+    // auto elapsed_time_string_size=sprintf(&elapsed_time_string[0], "%02i:%02i:%02li",
+    //     (chrono::duration_cast<chrono::hours>(elapsed_time)).count(),
+    //     (chrono::duration_cast<chrono::minutes>(elapsed_time)).count()%60,
+    //     (chrono::duration_cast<chrono::seconds>(elapsed_time)).count()%60);
+    // elapsed_time_string.resize(elapsed_time_string_size);
+    // print(elapsed_time_string);
+    assert(0);
     return 0;
 }

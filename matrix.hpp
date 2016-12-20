@@ -41,6 +41,14 @@ public:
                 (*this)[i][j]=s;
     }
 
+    Matrix(const Matrix &other_arr, std::mt19937 &gen, std::bernoulli_distribution &dst) noexcept
+    {
+        for(size_t i=0;i<M;i++)
+            for(size_t j=0;j<N;j++)
+                if(dst(gen))(*this)[i][j]=other_arr[i][j];
+                else        (*this)[i][j]=0.0;
+    }
+
     Matrix(const Matrix &other_arr) noexcept
     {
         std::cout << "()COPY ALERT !!!" << std::endl;
@@ -689,6 +697,17 @@ public:
                 element=dst(gen);
     }
 
+    inline void randomize_for_autoencoder() noexcept //same as for relu :)
+    {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        double a=4.*sqrt(6./(M+N));
+        std::uniform_real_distribution<double> dst(-a,a);
+        for(auto &row:*this)
+            for(auto &element:row)
+                element=dst(gen);
+    }
+
     inline void randomize_for_relu_nn() noexcept
     {
         std::random_device rd;
@@ -839,6 +858,18 @@ public:
                 (*this)[i][j]+=factor*a[i][j]*a[i][j];
     }
 
+    // template<unsigned long L>//user should make sure that this!=&a and this!=&b
+    // inline void add_at_dot_bt(const Matrix<L,M>& a, const Matrix<N,L>& b) noexcept
+    // {
+    //     for(size_t i=0;i<M;i++)
+    //         for(size_t j=0;j<N;j++)
+    //         {
+    //             double acc=0.0;
+    //             for(size_t k=0;k<L;k++) acc+=a[k][i]*b[j][k];
+    //             (*this)[i][j]+=acc;
+    //         }
+    // }
+
     /// File IO stuff
     /// ################################################################################################
     inline void to_file(std::ofstream &out) const
@@ -975,6 +1006,23 @@ public:
     {
         return X;
     }
+
+    // inline const Matrix<1,mat_size> get_noisy(double sigma_squared) const noexcept
+    // {
+    //     Matrix<1,mat_size> ret;
+    //     ret.set(X);
+    //     static std::random_device rd;
+    //     static std::mt19937 gen(rd());
+    //     static std::normal_distribution<double> dst(0,sigma_squared);
+    //     for(auto &row:ret)
+    //         for(auto &element:row)
+    //             {
+    //                 element+=dst(gen);
+    //                 if(element<0.0) element=0.0;
+    //                 if(element>1.0) element=1.0;
+    //             }
+    //     return ret;
+    // }
 };
 
 #endif
