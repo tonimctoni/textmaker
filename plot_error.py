@@ -94,61 +94,21 @@ def myfun(directory):
 # plt.savefig("a.png")#, dpi=80
 # plt.show()
 
-
-
-
-# Text NAG
-X,Y=myfun("outs/tm02/tn")
-# Y=divide(Y, 46)
-plt.plot(X,Y, "g", X,Y, "go")
-
-# Text RMSProp
-X,Y=myfun("outs/tm02/tr")
-# Y=divide(Y, 46)
+X,Y=myfun("outs/tm02/01")
 X=multiply(X,5)
-Y=multiply(Y,5)
 plt.plot(X,Y, "r", X,Y, "ro")
-
-# # Text NAG
-# X,Y=myfun("outs/tm02/gn")
-# # Y=divide(Y, 94)
-# plt.plot(X,Y, "g", X,Y, "gs")
-
-# # Text RMSProp
-# X,Y=myfun("outs/tm02/gr")
-# # Y=divide(Y, 94)
-# X=multiply(X,5)
-# Y=multiply(Y,5)
-# plt.plot(X,Y, "r", X,Y, "rs")
-
-# Text NAG with larger neural network
-X,Y=myfun("outs/tm02/tnl")
-# Y=divide(Y, 46)
-plt.plot(X[1:],Y[1:], "g--", X[1:],Y[1:], "g*")
-
-# Text NAG with cut neural network
-X,Y=myfun("outs/tm02/tnc")
-# Y=divide(Y, 46)
-plt.plot(X,Y, "g--", X,Y, "g^")
-
-# Text RMSProp with cut neural network
-X,Y=myfun("outs/tm02/trc")
-# Y=divide(Y, 46)
+X,Y=myfun("outs/tm02/02")
 X=multiply(X,5)
-Y=multiply(Y,5)
-plt.plot(X,Y, "r--", X,Y, "r^")
-
-# Text NAG with cut neural network
-# X,Y=myfun("outs/tm02/tnlc")
-# # Y=divide(Y, 46)
-# plt.plot(X,Y, "g--", X,Y, "g^")
-
-# CSS RMSProp
-X,Y=myfun("outs/tm02/cr")
-# Y=divide(Y, 72)
-X=multiply(X,5*2)
-Y=multiply(Y,5)
+plt.plot(X,Y, "g", X,Y, "go")
+X,Y=myfun("outs/tm02/03")
+X=multiply(X,5)
 plt.plot(X,Y, "b", X,Y, "bo")
+X,Y=myfun("outs/tm02/04")
+X=multiply(X,5)
+plt.plot(X,Y, "k", X,Y, "ko")
+X,Y=myfun("outs/tm02/05")
+X=multiply(X,5)
+plt.plot(X,Y, "c", X,Y, "co")
 
 plt.grid(True)
 # plt.savefig("a.png")#, dpi=80
