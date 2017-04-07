@@ -21,7 +21,7 @@ int main()
     static constexpr size_t output_quantity=5;
 
     static constexpr size_t allowed_char_amount=72;
-    static constexpr size_t min_training_chars=200;
+    static constexpr size_t min_training_chars=400;
     static constexpr size_t max_training_chars=1000;
     static constexpr auto time_between_saves=chrono::hours{6};
     static constexpr auto time_between_error_saves=chrono::minutes{20};
@@ -36,8 +36,7 @@ int main()
     static constexpr size_t batch_size=10;
 
     auto get_learning_rate=[](size_t iteration){
-        return (0.05/batch_size)*pow(0.9772372209558107, ((iteration*batch_size)/1000.));
-        // return (0.05/batch_size)*1./(1.+0.00004*(iteration*batch_size))
+        return (0.1/batch_size)*pow(0.5, (iteration*batch_size)/40000.);
     };
     double learning_rate=get_learning_rate(0);
 
@@ -230,6 +229,7 @@ int main()
             last_error_time=current_time;
             print("Saving error...");
             ofstream out(errors_filename, std::fstream::app);
+            assert(out.good());
             // auto actual_error=iteration*batch_size>1000?error:error*(1000./(iteration*batch_size>0?iteration*batch_size:1.));
             out << iteration << "\t" << error << "\n";
         }
